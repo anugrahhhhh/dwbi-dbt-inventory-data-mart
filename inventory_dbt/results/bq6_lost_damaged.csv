@@ -1,0 +1,25 @@
+category,warehouse_name,units_lost,units_damaged,units_lost_damaged
+Air Fryer,Warehouse Jawa,287,260,547
+Air Fryer,Warehouse Kalimantan,318,259,577
+Air Fryer,Warehouse Sumatra,236,262,498
+Blender,Warehouse Jawa,993,1032,2025
+Blender,Warehouse Kalimantan,1192,1125,2317
+Blender,Warehouse Sumatra,1068,1271,2339
+Coffee Maker,Warehouse Jawa,322,366,688
+Coffee Maker,Warehouse Kalimantan,361,245,606
+Coffee Maker,Warehouse Sumatra,270,302,572
+Electric Kettle,Warehouse Jawa,232,293,525
+Electric Kettle,Warehouse Kalimantan,250,267,517
+Electric Kettle,Warehouse Sumatra,217,243,460
+Electric Stove,Warehouse Jawa,339,312,651
+Electric Stove,Warehouse Kalimantan,305,317,622
+Electric Stove,Warehouse Sumatra,227,322,549
+Hand Mixer,Warehouse Jawa,281,316,597
+Hand Mixer,Warehouse Kalimantan,303,290,593
+Hand Mixer,Warehouse Sumatra,271,277,548
+Microwave,Warehouse Jawa,243,392,635
+Microwave,Warehouse Kalimantan,284,285,569
+Microwave,Warehouse Sumatra,414,341,755
+Rice Cooker,Warehouse Jawa,1037,1046,2083
+Rice Cooker,Warehouse Kalimantan,1147,1106,2253
+Rice Cooker,Warehouse Sumatra,1121,997,2118

@@ -1,0 +1,19 @@
+warehouse_name,movement_type,total_activity
+Warehouse Jawa,DAMAGED,570
+Warehouse Jawa,FOUND,12
+Warehouse Jawa,LOST,541
+Warehouse Jawa,PURCHASE,563
+Warehouse Jawa,SALE,532
+Warehouse Jawa,TRANSFER,1074
+Warehouse Kalimantan,DAMAGED,550
+Warehouse Kalimantan,FOUND,13
+Warehouse Kalimantan,LOST,597
+Warehouse Kalimantan,PURCHASE,543
+Warehouse Kalimantan,SALE,540
+Warehouse Kalimantan,TRANSFER,1104
+Warehouse Sumatra,DAMAGED,571
+Warehouse Sumatra,FOUND,8
+Warehouse Sumatra,LOST,553
+Warehouse Sumatra,PURCHASE,567
+Warehouse Sumatra,SALE,530
+Warehouse Sumatra,TRANSFER,1132

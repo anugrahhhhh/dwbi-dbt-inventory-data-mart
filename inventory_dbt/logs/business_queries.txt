@@ -1,0 +1,101 @@
+
+== bq1_aging_by_warehouse (3 baris) ==
+      warehouse_name  total_stock_days  total_qty_out  aging_days
+Warehouse Kalimantan           4193087          26594       157.7
+      Warehouse Jawa           4757605          26988       176.3
+   Warehouse Sumatra           5124564          26912       190.4
+
+== bq2_activity_distribution (6 baris) ==
+movement_type  total_activity   pct
+     TRANSFER            3310 33.10
+      DAMAGED            1691 16.91
+         LOST            1691 16.91
+     PURCHASE            1673 16.73
+         SALE            1602 16.02
+        FOUND              33  0.33
+
+== bq3_activity_heatmap (3 baris) ==
+      warehouse_name  SALE  PURCHASE  TRANSFER  LOST  DAMAGED  FOUND
+      Warehouse Jawa   532       563      1074   541      570     12
+Warehouse Kalimantan   540       543      1104   597      550     13
+   Warehouse Sumatra   530       567      1132   553      571      8
+
+== bq4_activity_by_warehouse (18 baris) ==
+      warehouse_name movement_type  total_activity
+      Warehouse Jawa       DAMAGED             570
+      Warehouse Jawa         FOUND              12
+      Warehouse Jawa          LOST             541
+      Warehouse Jawa      PURCHASE             563
+      Warehouse Jawa          SALE             532
+      Warehouse Jawa      TRANSFER            1074
+Warehouse Kalimantan       DAMAGED             550
+Warehouse Kalimantan         FOUND              13
+Warehouse Kalimantan          LOST             597
+Warehouse Kalimantan      PURCHASE             543
+Warehouse Kalimantan          SALE             540
+Warehouse Kalimantan      TRANSFER            1104
+
+== bq5_aging_by_category_warehouse (24 baris) ==
+       category       warehouse_name  aging_days
+      Air Fryer       Warehouse Jawa       185.6
+      Air Fryer Warehouse Kalimantan       276.5
+      Air Fryer    Warehouse Sumatra       221.2
+        Blender       Warehouse Jawa       140.2
+        Blender Warehouse Kalimantan       137.6
+        Blender    Warehouse Sumatra       235.1
+   Coffee Maker       Warehouse Jawa       129.1
+   Coffee Maker Warehouse Kalimantan       202.4
+   Coffee Maker    Warehouse Sumatra       184.6
+Electric Kettle       Warehouse Jawa       158.0
+Electric Kettle Warehouse Kalimantan        55.0
+Electric Kettle    Warehouse Sumatra        57.9
+
+== bq6_lost_damaged (24 baris) ==
+       category       warehouse_name  units_lost  units_damaged  units_lost_damaged
+      Air Fryer       Warehouse Jawa         287            260                 547
+      Air Fryer Warehouse Kalimantan         318            259                 577
+      Air Fryer    Warehouse Sumatra         236            262                 498
+        Blender       Warehouse Jawa         993           1032                2025
+        Blender Warehouse Kalimantan        1192           1125                2317
+        Blender    Warehouse Sumatra        1068           1271                2339
+   Coffee Maker       Warehouse Jawa         322            366                 688
+   Coffee Maker Warehouse Kalimantan         361            245                 606
+   Coffee Maker    Warehouse Sumatra         270            302                 572
+Electric Kettle       Warehouse Jawa         232            293                 525
+Electric Kettle Warehouse Kalimantan         250            267                 517
+Electric Kettle    Warehouse Sumatra         217            243                 460
+
+== bq7_total_activity (6 baris) ==
+movement_type movement_group  total_activity  total_units
+     TRANSFER       transfer            3310        57512
+      DAMAGED       outbound            1691        11926
+         LOST       outbound            1691        11718
+     PURCHASE        inbound            1673        83939
+         SALE       outbound            1602        28094
+        FOUND        inbound              33           91
+
+== bq8_units_sold_by_category (8 baris) ==
+       category  sale_transactions  units_sold
+    Rice Cooker                480        8520
+        Blender                445        7880
+   Coffee Maker                126        2223
+     Hand Mixer                123        2158
+Electric Kettle                113        2052
+      Microwave                111        1934
+      Air Fryer                105        1694
+ Electric Stove                 99        1633
+
+== bq9_transfers_per_month (24 baris) ==
+ year  month  transfer_count  units_transferred
+ 2024      1              57               1049
+ 2024      2              50                862
+ 2024      3              74               1249
+ 2024      4              88               1528
+ 2024      5              76               1181
+ 2024      6              60                980
+ 2024      7              54                885
+ 2024      8              80               1499
+ 2024      9              64               1108
+ 2024     10              68               1163
+ 2024     11              68               1179
+ 2024     12              63               1159
