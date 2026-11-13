@@ -7,4 +7,4 @@ select
 from {{ ref('fact_inventory') }} f
 join {{ ref('dim_movement_type') }} t on f.movement_type_key = t.movement_type_key
 group by t.movement_type, t.movement_group
-order by total_activity desc
+order by total_activity desc, t.movement_type  -- tie-breaker agar urutan stabil

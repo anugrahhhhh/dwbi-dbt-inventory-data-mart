@@ -1,2 +1,99 @@
-\chapter{Lampiran}
-Ringkasan perintah.
+\chapter*{Lampiran}
+\addcontentsline{toc}{chapter}{Lampiran}
+\markboth{Lampiran}{Lampiran}
+
+\section*{A. Ringkasan Perintah}
+\addcontentsline{toc}{section}{A. Ringkasan Perintah}
+Jalankan dari folder proyek dengan venv aktif; tambahkan \kode{--profiles-dir .} karena \kode{profiles.yml} berada di folder proyek.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.47\linewidth} >{\raggedright\arraybackslash}p{0.47\linewidth}}
+\caption{Ringkasan perintah yang dipakai di modul.}\label{tab:ringkasan}\\
+\toprule
+\textbf{Perintah} & \textbf{Kegunaan} \\
+\midrule\endfirsthead
+\toprule
+\textbf{Perintah} & \textbf{Kegunaan} \\
+\midrule\endhead
+\bottomrule\endfoot
+\multicolumn{2}{l}{\textit{Lingkungan}} \\
+\kode{python -m venv .venv} & Membuat \istilah{virtual environment} (sekali) \\
+\kode{.venv\textbackslash Scripts\textbackslash Activate.ps1} & Mengaktifkan venv (PowerShell) \\
+\kode{pip install "dbt-core\textasciitilde=1.11.0" "dbt-duckdb\textasciitilde=1.11.0"} & Memasang dbt + adapter DuckDB \\
+\kode{pip install "dbt-postgres\textasciitilde=1.11.0"} & Menambah adapter PostgreSQL (Neon) \\
+\kode{dbt --version} & Memeriksa versi dbt dan adapter \\
+\kode{dbt debug --profiles-dir .} & Memeriksa konfigurasi dan koneksi \\
+\multicolumn{2}{l}{\textit{Data sumber (di luar dbt)}} \\
+\kode{python scripts/generate\_source\_data.py} & Membangkitkan 3 tabel sumber ke \kode{data/} \\
+\kode{python scripts/load\_source.py [--target postgres]} & Memuat CSV ke DuckDB atau Neon \\
+\multicolumn{2}{l}{\textit{Membangun dan menguji}} \\
+\kode{dbt init nama --skip-profile-setup} & Membuat kerangka proyek baru \\
+\kode{dbt seed} & Memuat berkas CSV di \kode{seeds/} menjadi tabel \\
+\kode{dbt run} & Membangun seluruh model sesuai DAG \\
+\kode{dbt run --select nama\_model} & Membangun satu model \\
+\kode{dbt run --select +nama\_model} & Membangun model beserta seluruh model hulunya \\
+\kode{dbt test} & Menjalankan seluruh test \\
+\kode{dbt build} & \kode{seed} + \kode{run} + \kode{test} (+ \kode{snapshot}) dalam urutan DAG \\
+\kode{dbt build --target postgres} & Sama, tetapi ke basis data Neon \\
+\kode{dbt build --no-partial-parse} & Memaksa dbt membaca ulang semua berkas \\
+\kode{dbt compile --select path:analyses} & Menghasilkan SQL murni BQ di \kode{target/compiled/} \\
+\kode{dbt ls --select +nama\_model} & Menampilkan model yang akan ikut dibangun \\
+\multicolumn{2}{l}{\textit{Analisis dan verifikasi}} \\
+\kode{python scripts/run\_business\_queries.py} & Menjalankan BQ1--BQ9, menyimpan CSV dan grafik \\
+\kode{python scripts/mutation\_test.py} & Membuktikan \istilah{singular test} menangkap data rusak \\
+\kode{python scripts/etl\_manual\_tugas1.py [--naive]} & Membangun data mart dengan ETL manual gaya Tugas~I \\
+\kode{python scripts/compare\_tugas1\_vs\_dbt.py} & Membandingkan hasil ETL manual dan dbt \\
+\kode{python -m pytest scripts/tests} & Menjalankan seluruh test Python proyek \\
+\multicolumn{2}{l}{\textit{Dokumentasi dan perawatan}} \\
+\kode{dbt docs generate} lalu \kode{dbt docs serve} & Situs kamus data dan \istilah{lineage} di \url{http://localhost:8080} \\
+\kode{dbt clean} & Menghapus folder \kode{target/} dan \kode{dbt\_packages/} \\
+\end{longtable}
+
+\section*{B. Daftar Periksa Praktik}
+\addcontentsline{toc}{section}{B. Daftar Periksa Praktik}
+Centang setiap butir secara berurutan. Bila sebuah butir gagal, berhenti dan lihat Tabel~\ref{tab:galat} sebelum lanjut.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.45\linewidth} >{\raggedright\arraybackslash}p{0.49\linewidth}}
+\caption{Daftar periksa dari instalasi sampai hasil studi kasus.}\label{tab:checklist}\\
+\toprule
+\textbf{Butir} & \textbf{Bukti berhasil} \\
+\midrule\endfirsthead
+\toprule
+\textbf{Butir} & \textbf{Bukti berhasil} \\
+\midrule\endhead
+\bottomrule\endfoot
+$\square$ Python 3.10--3.13 terpasang & \kode{python --version} \\
+$\square$ Venv aktif & awal baris terminal \kode{(.venv)} \\
+$\square$ dbt dan adapter terpasang & \kode{duckdb: 1.11.x} di \kode{dbt --version} \\
+$\square$ Koneksi benar & \kode{All checks passed!} \\
+$\square$ Latihan proyek pertama & \kode{dbt build}: \kode{PASS=4} \\
+$\square$ ClassicModels (elaborasi) & \kode{dbt build}: \kode{PASS=44} \\
+$\square$ Data sumber inventory dimuat & \kode{source\_inventory\_movements: 10,000 baris dimuat} \\
+$\square$ Data mart inventory dibangun dan diuji & \kode{dbt build}: \kode{PASS=59} \\
+$\square$ \istilah{Mutation test} & \kode{KESIMPULAN: SEMUA TEST MENDETEKSI KERUSAKAN} \\
+$\square$ Business query & \kode{results/bq1...bq9.csv} dan \kode{charts/*.png} terbentuk \\
+$\square$ Pembanding Tugas~I & \kode{KESIMPULAN: seluruh hasil identik} \\
+$\square$ Dokumentasi & situs \kode{dbt docs} terbuka dan \istilah{lineage} tampil \\
+$\square$ (Opsional) Colab + Neon & \kode{dbt build --target postgres}: \kode{PASS=59} \\
+\end{longtable}
+
+\section*{C. Glosarium}
+\addcontentsline{toc}{section}{C. Glosarium}
+\begin{description}[style=nextline, leftmargin=3.2cm, labelwidth=3cm, nosep]
+    \item[Adapter] \istilah{Plugin} yang menghubungkan dbt dengan satu jenis basis data.
+    \item[Aging] Rata-rata lama (hari) sebuah unit tertahan di gudang sebelum keluar.
+    \item[DAG] \istilah{Directed Acyclic Graph}; peta ketergantungan antarmodel yang menentukan urutan eksekusi.
+    \item[Dimensi] Tabel konteks (siapa, apa, di mana, kapan) bagi tabel fakta.
+    \item[ELT] \istilah{Extract, Load, Transform}; data dimuat dulu ke gudang data, baru ditransformasi di sana.
+    \item[Fakta] Tabel berisi ukuran numerik suatu peristiwa bisnis pada \istilah{grain} tertentu.
+    \item[Grain] Arti satu baris tabel fakta.
+    \item[Lineage] Jejak asal-usul data dari sumber sampai tabel akhir.
+    \item[Materialisasi] Cara dbt menyimpan model: \istilah{view}, \istilah{table}, \istilah{incremental}, \istilah{ephemeral}.
+    \item[Model] Berkas \kode{.sql} berisi satu \kode{SELECT} yang menjadi satu tabel/\istilah{view}.
+    \item[Mutation test] Sengaja merusak data untuk membuktikan bahwa sebuah test benar-benar gagal ketika data salah.
+    \item[SCD] \istilah{Slowly Changing Dimension}; strategi menangani perubahan atribut dimensi.
+    \item[Seed] Berkas CSV kecil yang dimuat dbt menjadi tabel.
+    \item[Semi-additive] Ukuran yang boleh dijumlah pada sebagian dimensi saja (mis. stok tidak boleh dijumlah lintas tanggal).
+    \item[Surrogate key] Kunci bilangan buatan gudang data untuk baris dimensi.
+    \item[Target] Satu konfigurasi koneksi di \kode{profiles.yml} (\kode{dev} = DuckDB, \kode{postgres} = Neon).
+    \item[Test] Aturan kualitas data; lulus bila tidak ada baris yang melanggar.
+\end{description}

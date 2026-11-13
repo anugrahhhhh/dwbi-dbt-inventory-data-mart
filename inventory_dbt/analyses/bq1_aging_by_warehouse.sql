@@ -9,4 +9,4 @@ select
 from {{ ref('fact_inventory_daily_snapshot') }} s
 join {{ ref('dim_warehouse') }} w on s.warehouse_key = w.warehouse_key
 group by w.warehouse_name
-order by aging_days
+order by aging_days, w.warehouse_name

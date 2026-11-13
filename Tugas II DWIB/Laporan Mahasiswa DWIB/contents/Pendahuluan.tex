@@ -1,2 +1,84 @@
-\chapter{Pendahuluan: Cara Memakai Modul Ini}
-Modul ini disusun berdasarkan \citet{kimball2013} dan dokumentasi dbt \citep{dbtdocs}.\index{dbt}
+\chapter*{Pendahuluan: Cara Memakai Modul Ini}
+\addcontentsline{toc}{chapter}{Pendahuluan: Cara Memakai Modul Ini}
+\markboth{Pendahuluan}{Pendahuluan}
+
+\section*{Tujuan Modul}
+Setelah mengikuti modul ini, pembaca diharapkan mampu:
+\begin{enumerate}[nosep]
+    \item menjelaskan posisi dbt (\istilah{Data Build Tool}) dalam arsitektur ELT dan hubungannya dengan \istilah{dimensional modelling} Kimball;
+    \item menyiapkan lingkungan dbt sendiri, baik di Google Colab (dengan PostgreSQL Neon) maupun di komputer lokal Windows (dengan DuckDB), sampai perintah \kode{dbt debug} menampilkan \kode{All checks passed!};
+    \item membuat proyek, model, test, dan dokumentasi dbt pertama dari nol;
+    \item menjalankan ulang dua proyek dbt yang disertakan, yaitu elaborasi laboratorium ClassicModels dan studi kasus \textbf{Data Mart Inventory} dari Tugas~I, lalu membaca hasilnya.
+\end{enumerate}
+
+\section*{Sasaran Pembaca dan Prasyarat}
+Modul ditulis untuk \textbf{orang awam}: pembaca yang belum pernah memakai dbt maupun terminal. Yang diperlukan hanya:
+\begin{itemize}[nosep]
+    \item komputer dengan koneksi internet dan ruang kosong sekitar 1~GB, \emph{atau} akun Google untuk jalur Colab;
+    \item kemampuan dasar SQL (\kode{SELECT}, \kode{JOIN}, \kode{GROUP BY}) untuk memahami isi model; langkah instalasi tidak memerlukan SQL sama sekali;
+    \item berkas lampiran kelompok \kode{DWBI\_Kelompok\_Inventory.zip}.
+\end{itemize}
+
+\section*{Peta Modul}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[box/.style={draw, rounded corners, thick, fill=blue!6, minimum height=1.5cm, text width=2.7cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=2.5mm]}, thick}]
+\node[box] (b1) {\textbf{Bab 1}\\Konsep dbt, Kimball, ClassicModels};
+\node[box, right=0.7cm of b1] (b2) {\textbf{Bab 2}\\Menyiapkan lingkungan dbt};
+\node[box, right=0.7cm of b2] (b3) {\textbf{Bab 3}\\Studi kasus Data Mart Inventory};
+\node[box, right=0.7cm of b3, fill=gray!10] (lp) {\textbf{Lampiran}\\Ringkasan perintah \& \istilah{checklist}};
+\draw[arr] (b1) -- (b2); \draw[arr] (b2) -- (b3); \draw[arr] (b3) -- (lp);
+\node[below=0.1cm of b1, font=\scriptsize] {$\pm$45 menit baca};
+\node[below=0.1cm of b2, font=\scriptsize] {$\pm$30--45 menit praktik};
+\node[below=0.1cm of b3, font=\scriptsize] {$\pm$60 menit praktik};
+\node[below=0.1cm of lp, font=\scriptsize] {rujukan cepat};
+\end{tikzpicture}
+\caption{Urutan membaca modul dan perkiraan waktunya.}\label{fig:peta}
+\end{figure}
+Pembaca yang ingin langsung mencoba dapat membaca Subbab~\ref{sec:instalasi} (instalasi), lalu Subbab~\ref{sec:latihan} (model pertama), lalu Subbab~\ref{sec:skenario} (studi kasus). Teori di Bab~1 dapat dibaca belakangan.
+
+\section*{Konvensi Penulisan}
+Kode, nama berkas, dan perintah ditulis dengan \kode{huruf mesin ketik}. Kotak hitam berisi perintah terminal atau keluaran terminal; teks setelah \kode{\#} (atau \kode{--} pada SQL) adalah komentar dan tidak perlu diketik. Istilah asing dicetak \istilah{miring}. Selain itu dipakai empat jenis kotak:
+
+\begin{tips}Saran yang mempercepat pekerjaan, tetapi boleh dilewati.\end{tips}
+\begin{perhatian}Hal yang sering membuat langkah gagal. Baca sebelum menjalankan perintah.\end{perhatian}
+\begin{cekberhasil}Cara memastikan sendiri bahwa sebuah langkah sudah berhasil sebelum lanjut.\end{cekberhasil}
+\begin{info}Penjelasan tambahan, ringkasan, atau keputusan desain kelompok.\end{info}
+
+\section*{Isi Berkas Lampiran}
+\begin{table}[H]
+\centering\small
+\caption{Isi berkas \kode{DWBI\_Kelompok\_Inventory.zip}.}\label{tab:lampiranzip}
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+\textbf{Folder/berkas} & \textbf{Isi} \\
+\midrule
+\kode{inventory\_dbt/} & Proyek dbt studi kasus Data Mart Inventory: 9 model, 50 test, BQ1--BQ9, notebook Colab, skrip pembangkit data, pembanding Tugas~I, \istilah{mutation test}, serta \kode{data/}, \kode{results/}, \kode{charts/}, \kode{logs/} (Bab~3). \\
+\kode{classicmodels\_dbt/} & Proyek dbt elaborasi lab ClassicModels: 16 model, 28 test, catatan jawaban \kode{ACTIVITY\_NOTES.md} (Subbab~\ref{sec:classicmodel}). \\
+\kode{latihan\_dbt/} & Hasil latihan ``proyek pertama dari nol'' beserta log-nya (Subbab~\ref{sec:latihan}). \\
+\kode{Tugas II DWIB/} & Sumber \LaTeX{} modul ini (\kode{Makalah.tex}, \kode{contents/}, \kode{build.ps1}) dan PDF hasil kompilasi. \\
+\kode{requirements.txt} & Daftar versi seluruh paket Python yang dipakai. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{Anggota Kelompok dan Peran}
+\begin{table}[H]
+\centering\small
+\caption{Peran anggota kelompok dan kontribusinya pada modul.}\label{tab:peranawal}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+\textbf{Anggota} & \textbf{Peran} & \textbf{Kontribusi utama} \\
+\midrule
+\makecell[l]{Vytis Rabbani Rex\\(26/590730/PPA/07412)} & \textit{Data Modeler} & Rancangan \istilah{star schema}, \istilah{grain}, \istilah{bus matrix}, fakta snapshot; BQ1--BQ9 dan analisisnya. \\
+\makecell[l]{Muhammad Raihan Sinergie Proton\\(26/591068/PPA/07429)} & \makecell[l]{\textit{dbt \&}\\\textit{Pipeline Engineer}} & Lingkungan dbt (Colab + Neon dan lokal); model, macro, test; elaborasi ClassicModels; penulis utama Bab~2. \\
+\makecell[l]{Alfat Raehan\\(26/590022/PPA/0738)} & \makecell[l]{\textit{Documentation}\\\textit{\& QA Lead}} & Penyusun modul dan slide; \istilah{mutation test}; pembanding Tugas~I vs dbt; verifikasi ulang seluruh langkah; penulis utama Bab~1, Pendahuluan, Lampiran. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{Status Verifikasi}
+\begin{info}[Seluruh langkah dalam modul ini telah dijalankan ulang]
+Seluruh perintah, kode, dan angka diuji pada 13 November 2026 di Windows 11 dengan Python 3.10.6, \kode{dbt-core} 1.11.17, \kode{dbt-duckdb} 1.11.1, \kode{dbt-postgres} 1.11.0, dan DuckDB 1.5.6. Hasilnya: proyek inventory \kode{PASS=59} (9 model + 50 test); \istilah{mutation test} mendeteksi seluruh kerusakan; pembanding Tugas~I menyatakan 14 dari 14 objek identik; proyek ClassicModels \kode{PASS=44} (16 model + 28 test) dengan seluruh \istilah{checkpoint} lembar kegiatan terpenuhi. Tabel hasil di Bab~3 dibangkitkan otomatis dari \kode{results/*.csv}, dan angka pada narasi diperiksa otomatis terhadap berkas hasil dan log. Jalur Colab + Neon diverifikasi sebatas \kode{dbt parse} dan pemeriksaan dialek SQL (Subbab~\ref{sec:opsiA}).
+\end{info}

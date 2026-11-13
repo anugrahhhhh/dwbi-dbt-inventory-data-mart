@@ -72,3 +72,11 @@ def test_aging_is_finite_and_positive():
         vals = bq(n)[col]
         assert vals.notna().all() and (vals > 0).all()
         assert all(math.isfinite(v) for v in vals)
+
+
+def test_ties_are_ordered_deterministically():
+    # DAMAGED dan LOST sama-sama 1.691 transaksi: urutan harus stabil (alfabetis) antar-run
+    for name in ("bq2_activity_distribution", "bq7_total_activity"):
+        df = bq(name)
+        expected = df.sort_values(["total_activity", "movement_type"], ascending=[False, True])
+        assert list(df.movement_type) == list(expected.movement_type), name
