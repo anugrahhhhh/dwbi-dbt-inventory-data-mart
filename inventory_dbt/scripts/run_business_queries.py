@@ -30,26 +30,40 @@ TYPE_ORDER = ["SALE", "PURCHASE", "TRANSFER", "LOST", "DAMAGED", "FOUND"]
 BLUE = "#1f77b4"
 
 
-def compile_analyses() -> None:
-    r = subprocess.run([str(DBT), "compile", "--profiles-dir", ".", "--select", "path:analyses"],
+def compile_analyses(target: str = "dev") -> None:
+    r = subprocess.run([str(DBT), "compile", "--profiles-dir", ".", "--target", target,
+                        "--select", "path:analyses"],
                        cwd=PROJECT_DIR, capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit("dbt compile gagal:\n" + r.stdout + r.stderr)
 
 
-def run_all() -> dict[str, pd.DataFrame]:
+def _query_fn(target: str):
+    """Kembalikan (fungsi sql->DataFrame, fungsi tutup) untuk DuckDB lokal atau PostgreSQL/Neon."""
+    if target == "postgres":
+        import psycopg2
+
+        pg = psycopg2.connect(host=os.environ["NEON_HOST"], user=os.environ["NEON_USER"],
+                              password=os.environ["NEON_PASSWORD"], dbname=os.environ["NEON_DB"],
+                              sslmode="require")
+        return (lambda sql: pd.read_sql_query(sql, pg)), pg.close
     db = os.environ.get("INVENTORY_DB", str(PROJECT_DIR / "inventory.duckdb"))
     con = duckdb.connect(db, read_only=True)
+    return (lambda sql: con.execute(sql).df()), con.close
+
+
+def run_all(target: str = "dev") -> dict[str, pd.DataFrame]:
+    query, close = _query_fn(target)
     out = {}
     for f in sorted(COMPILED.glob("bq*.sql")):
-        df = con.execute(f.read_text(encoding="utf-8")).df()
+        df = query(f.read_text(encoding="utf-8"))
         for c in df.select_dtypes("number").columns:  # SUM bilangan bulat -> tampil tanpa ".0"
             if (df[c].dropna() % 1 == 0).all() and c not in ("aging_days", "pct"):
                 df[c] = df[c].astype("Int64")
         out[f.stem] = df
         RESULTS.mkdir(exist_ok=True)
         df.to_csv(RESULTS / f"{f.stem}.csv", index=False)
-    con.close()
+    close()
     return out
 
 
@@ -153,8 +167,14 @@ def charts(r: dict[str, pd.DataFrame]) -> None:
 
 
 def main() -> None:
-    compile_analyses()
-    results = run_all()
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--target", choices=["dev", "postgres"], default="dev",
+                    help="dev = DuckDB lokal, postgres = Neon (env NEON_*)")
+    target = ap.parse_args().target
+    compile_analyses(target)
+    results = run_all(target)
     charts(results)
     for name, df in results.items():
         print(f"\n== {name} ({len(df)} baris) ==")

@@ -1,7 +1,7 @@
 movement_type,movement_group,total_activity,total_units
 TRANSFER,transfer,3310,57512
-DAMAGED,outbound,1691,11926
 LOST,outbound,1691,11718
+DAMAGED,outbound,1691,11926
 PURCHASE,inbound,1673,83939
 SALE,outbound,1602,28094
 FOUND,inbound,33,91
