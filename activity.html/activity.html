@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Warehouse Laboratory Activity — ClassicModels: From OLTP to Data Marts</title>
+
+<!-- highlight.js for syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #222;
+    background: #f5f6fa;
+  }
+
+  .page-wrapper {
+    max-width: 920px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 40px 48px 60px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    min-height: 100vh;
+  }
+
+  /* ── Title block ──────────────────────────────────────────── */
+  .title-block {
+    text-align: center;
+    padding: 32px 0 28px;
+    border-bottom: 3px solid #005ab4;
+    margin-bottom: 32px;
+  }
+  .title-block .pre-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #005ab4;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .title-block h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 8px;
+  }
+  .title-block .subtitle {
+    font-size: 1.05rem;
+    color: #555;
+    margin-bottom: 12px;
+  }
+  .title-block .meta {
+    font-size: 0.92rem;
+    color: #888;
+  }
+
+  /* ── Table of Contents ────────────────────────────────────── */
+  .toc {
+    background: #f0f5ff;
+    border: 1px solid #b8cef7;
+    border-radius: 6px;
+    padding: 20px 28px;
+    margin-bottom: 36px;
+  }
+  .toc h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #005ab4;
+    border: none;
+    margin-bottom: 10px;
+    padding-bottom: 0;
+  }
+  .toc h2::after { display: none; }
+  .toc ol {
+    padding-left: 20px;
+  }
+  .toc li {
+    margin: 4px 0;
+  }
+  .toc a {
+    color: #005ab4;
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-sub {
+    list-style-type: disc;
+    padding-left: 22px;
+    margin-top: 4px;
+  }
+  .toc .toc-sub li { margin: 2px 0; }
+
+  /* ── Section headings ─────────────────────────────────────── */
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #003d80;
+    margin-top: 44px;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #005ab4;
+  }
+  h2::after {
+    content: '';
+    display: block;
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #005ab4;
+    margin-top: 28px;
+    margin-bottom: 6px;
+  }
+  h4 {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: #333;
+    margin-top: 20px;
+    margin-bottom: 4px;
+  }
+
+  /* ── Body text ────────────────────────────────────────────── */
+  p { margin: 0.55em 0 0.85em; }
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  code {
+    background: #eef3fb;
+    color: #005ab4;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.88em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid #d0ddf5;
+  }
+
+  /* ── Lists ────────────────────────────────────────────────── */
+  ul, ol {
+    margin: 0.5em 0 0.9em 1.5em;
+  }
+  li { margin: 0.25em 0; }
+
+  /* ── Tables ───────────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 1.2em 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  th {
+    background: #005ab4;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #dde4f0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f4f7ff; }
+  tr:nth-child(odd)  td { background: #fff; }
+
+  /* ── Code blocks ──────────────────────────────────────────── */
+  .code-block {
+    position: relative;
+    margin: 1.1em 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #d0dce8;
+  }
+  .code-block.bash-block {
+    border-color: #444;
+  }
+  .code-block pre {
+    margin: 0;
+    padding: 16px 16px 16px 16px;
+    overflow-x: auto;
+  }
+  .code-block pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.875rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    line-height: 1.55;
+    color: inherit;
+  }
+  /* SQL / YAML blocks */
+  .code-block.sql-block pre,
+  .code-block.yaml-block pre {
+    background: #f8f9fc;
+  }
+  /* Bash blocks */
+  .code-block.bash-block pre {
+    background: #1e1e1e;
+  }
+  .code-block.bash-block pre code {
+    color: #d4d4d4;
+  }
+  /* Code caption */
+  .code-caption {
+    background: #e8edf7;
+    border-bottom: 1px solid #cdd7ea;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    color: #4a5568;
+    font-style: italic;
+  }
+  .bash-block .code-caption {
+    background: #2d2d2d;
+    border-bottom-color: #444;
+    color: #aaa;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.85);
+    color: #005ab4;
+    border: 1px solid #b0c4e0;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.15s, color 0.15s;
+  }
+  .copy-btn:hover {
+    background: #005ab4;
+    color: #fff;
+    border-color: #005ab4;
+  }
+  .bash-block .copy-btn {
+    background: rgba(50,50,50,0.85);
+    color: #d4d4d4;
+    border-color: #555;
+  }
+  .bash-block .copy-btn:hover {
+    background: #d4d4d4;
+    color: #1e1e1e;
+  }
+
+  /* ── Colour boxes ─────────────────────────────────────────── */
+  .box {
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 1.2em 0;
+    border-left-width: 4px;
+    border-left-style: solid;
+  }
+  .box-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* info box */
+  .infobox {
+    background: #ebf4ff;
+    border-color: #4d8cdc;
+  }
+  .infobox .box-title { color: #1a5fa8; }
+
+  /* question box */
+  .questionbox {
+    background: #f0f5ff;
+    border-color: #5080c8;
+  }
+  .questionbox .box-title { color: #2a4d9e; }
+
+  /* worksheet box */
+  .worksheetbox {
+    background: #fffce8;
+    border-color: #c8a028;
+  }
+  .worksheetbox .box-title { color: #7a5c00; }
+
+  /* reveal box */
+  .revealbox {
+    background: #e8fff0;
+    border-color: #3ca050;
+  }
+  .revealbox .box-title { color: #1e6a30; }
+
+  /* checkpoint box */
+  .checkpointbox {
+    background: #f3f3f3;
+    border-color: #909090;
+  }
+  .checkpointbox .box-title { color: #444; }
+
+  /* ── Worksheet input table ────────────────────────────────── */
+  .worksheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    margin-top: 8px;
+  }
+  .worksheet-table th {
+    background: #e8c84a;
+    color: #4a3000;
+    padding: 7px 12px;
+    text-align: left;
+  }
+  .worksheet-table td {
+    border: 1px solid #d6c060;
+    padding: 8px 12px;
+    background: #fff;
+    vertical-align: middle;
+  }
+  .worksheet-table td:first-child {
+    font-weight: 600;
+    background: #fdf9e3;
+    width: 36%;
+  }
+  .worksheet-table input[type="text"] {
+    width: 100%;
+    border: 1px solid #c8a028;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: #fffef5;
+  }
+  .worksheet-table input[type="text"]:focus {
+    outline: none;
+    border-color: #005ab4;
+    box-shadow: 0 0 0 2px rgba(0,90,180,0.15);
+  }
+
+  /* ── Diagrams ─────────────────────────────────────────────── */
+  /* ER Diagram */
+  .er-diagram {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fc;
+    border: 1px solid #dde4f0;
+    border-radius: 6px;
+    margin: 1.2em 0;
+    font-size: 0.85rem;
+  }
+  .er-entity {
+    background: #fff;
+    border: 2px solid #9aabb8;
+    border-radius: 3px;
+    padding: 6px 14px;
+    font-weight: 700;
+    color: #333;
+    white-space: nowrap;
+  }
+  .er-arrow {
+    color: #888;
+    font-size: 1.1rem;
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+  }
+  .er-diagram .er-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .er-note {
+    font-size: 0.78rem;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 6px;
+    width: 100%;
+  }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin: 1.2em auto;
+    max-width: 600px;
+  }
+  .arch-layer {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .arch-layer .layer-label {
+    font-size: 1.0rem;
+    font-weight: 700;
+  }
+  .arch-layer .layer-sub {
+    font-size: 0.82rem;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .arch-layer.src  { background: #e8e8e8; border: 2px solid #aaa; color: #333; }
+  .arch-layer.stg  { background: #ddeeff; border: 2px solid #7aaad8; color: #1a3d70; }
+  .arch-layer.dim  { background: #ffe8cc; border: 2px solid #d48040; color: #5a2a00; }
+  .arch-layer.mart { background: #d8eeff; border: 2px solid #4d8cdc; color: #0a2e60; }
+  .arch-arrow {
+    font-size: 1.4rem;
+    color: #555;
+    line-height: 1;
+    padding: 2px 0;
+  }
+
+  /* Star schema diagrams */
+  .star-schema {
+    background: #f8f9fc;
+    border: 1px solid #dde4f0;
+    border-radius: 6px;
+    padding: 20px 16px;
+    margin: 1.2em 0;
+  }
+  .star-schema-title {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+  .star-grid {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    align-items: center;
+  }
+  /* 3-dim layout: top, left, center (fact), right, bottom-left, bottom-right */
+  .star-grid-5 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .star-grid-2 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .star-grid-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .fact-table-box {
+    background: #dbeeff;
+    border: 2px solid #4d8cdc;
+    border-radius: 6px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 0.82rem;
+  }
+  .fact-table-box .ft-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #003d80;
+    margin-bottom: 5px;
+  }
+  .fact-table-box .ft-fields {
+    color: #1a4a80;
+    font-family: 'Consolas', monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .dim-table-box {
+    background: #fff3e0;
+    border: 2px solid #d48040;
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 0.82rem;
+    width: 100%;
+  }
+  .dim-table-box .dt-name {
+    font-weight: 700;
+    color: #7a3000;
+    font-size: 0.88rem;
+    margin-bottom: 3px;
+  }
+  .dim-table-box .dt-fields {
+    color: #a04000;
+    font-family: 'Consolas', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .source-note-box {
+    background: #f5f5f5;
+    border: 1px dashed #bbb;
+    border-radius: 4px;
+    padding: 6px 10px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #777;
+  }
+  .star-connector {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #999;
+    line-height: 1;
+  }
+  .arrow-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #888;
+  }
+
+  /* ── Page break helper ─────────────────────────────────────── */
+  .page-break { margin: 40px 0 36px; border-top: 1.5px dashed #c8d4e8; }
+
+  /* ── Responsive ────────────────────────────────────────────── */
+  @media (max-width: 700px) {
+    .page-wrapper { padding: 20px 16px 40px; }
+    .star-grid-5,
+    .star-grid-2,
+    .star-grid-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- TITLE BLOCK                                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="title-block">
+  <div class="pre-title">Data Warehouse Laboratory Activity</div>
+  <h1>ClassicModels: From OLTP to Data Marts</h1>
+  <div class="subtitle">Kimball Dimensional Modeling and dbt with DuckDB</div>
+  <div class="meta">Data Warehouse Course &nbsp;·&nbsp; Semester 2025/2026</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS                                                   -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#part0">Part 0: Background and Setup</a>
+      <ul class="toc-sub">
+        <li><a href="#what-is-dw">What is a Data Warehouse?</a></li>
+        <li><a href="#kimball">The Kimball Dimensional Modeling Methodology</a></li>
+        <li><a href="#classicmodels">The ClassicModels Business Context</a></li>
+        <li><a href="#setup">Setup Instructions</a></li>
+      </ul>
+    </li>
+    <li><a href="#part1">Part 1: Dimensional Modeling Design</a>
+      <ul class="toc-sub">
+        <li><a href="#bp1">Business Process 1: Sales Order Lines</a></li>
+        <li><a href="#bp2">Business Process 2: Customer Payments</a></li>
+        <li><a href="#bp3">Business Process 3: Sales Rep Performance</a></li>
+      </ul>
+    </li>
+    <li><a href="#part2">Part 2: Introduction to dbt</a>
+      <ul class="toc-sub">
+        <li><a href="#what-is-dbt">What is dbt?</a></li>
+        <li><a href="#key-concepts">Key Concepts</a></li>
+        <li><a href="#three-layer">Three-Layer Architecture</a></li>
+        <li><a href="#project-structure">Project Structure</a></li>
+        <li><a href="#dbt-commands">Essential dbt Commands</a></li>
+      </ul>
+    </li>
+    <li><a href="#part3">Part 3: Building the Data Marts with dbt</a>
+      <ul class="toc-sub">
+        <li><a href="#step1">Step 1: Verify the Source Data</a></li>
+        <li><a href="#step2">Step 2: Build the Staging Layer</a></li>
+        <li><a href="#step3">Step 3: Build the Dimension Models</a></li>
+        <li><a href="#step4">Step 4: Build the Fact Tables</a></li>
+        <li><a href="#step5">Step 5: Explore Your Data Marts</a></li>
+        <li><a href="#step6">Step 6: Visualise the dbt DAG</a></li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PART 0                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="part0">Part 0: Background and Setup</h2>
+
+<h3 id="what-is-dw">What is a Data Warehouse?</h3>
+
+<p>A <strong>data warehouse</strong> is a centralized repository designed for analytical queries across large volumes of historical data. Unlike transactional databases (<strong>OLTP</strong>), which are optimized for recording individual events quickly, a data warehouse (<strong>OLAP</strong>) is structured for aggregation, trend analysis, and business reporting.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Characteristic</th>
+      <th>OLTP (Transactional)</th>
+      <th>OLAP (Analytical)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Purpose</td><td>Record daily transactions</td><td>Analyze historical data</td></tr>
+    <tr><td>Query type</td><td>Simple reads/writes</td><td>Complex aggregations</td></tr>
+    <tr><td>Data model</td><td>Normalized (3NF)</td><td>Denormalized (Star/Snowflake)</td></tr>
+    <tr><td>Optimized for</td><td>Write throughput</td><td>Read/query performance</td></tr>
+    <tr><td>Users</td><td>Application backend</td><td>Analysts, managers</td></tr>
+    <tr><td>Update frequency</td><td>Real-time</td><td>Batch (daily/weekly)</td></tr>
+    <tr><td>History</td><td>Current state</td><td>Years of history</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="kimball">The Kimball Dimensional Modeling Methodology</h3>
+
+<p>Ralph Kimball's <strong>dimensional modeling</strong> approach is the most widely adopted framework for designing data warehouses. Data is organized into two types of tables:</p>
+
+<ul>
+  <li><strong>Fact tables</strong> — record measurements of business events (e.g., a sale, a payment). Rows are numerous; columns are mostly numeric measures and foreign keys to dimensions.</li>
+  <li><strong>Dimension tables</strong> — provide the <em>context</em> surrounding each event (e.g., <em>which</em> customer, <em>which</em> product, <em>when</em>). Rows are fewer; columns are descriptive attributes used for filtering and grouping.</li>
+</ul>
+
+<p>Together they form a <strong>star schema</strong> — the fact table at the center, dimension tables radiating outward.</p>
+
+<div class="box infobox">
+  <div class="box-title">The Kimball 4-Step Process</div>
+  <p>For every business process you want to model, apply these four steps <em>in order</em>:</p>
+  <ol>
+    <li><strong>Select the business process</strong> — What event or process are we measuring?</li>
+    <li><strong>Declare the grain</strong> — What does <em>exactly one row</em> in the fact table represent? Be as specific as possible.</li>
+    <li><strong>Identify dimensions</strong> — What context surrounds each event? Think: who, what, where, when.</li>
+    <li><strong>Identify facts</strong> — What numeric measures capture the event? These are the columns analysts will <code>SUM()</code>, <code>AVG()</code>, etc.</li>
+  </ol>
+</div>
+
+<h3 id="classicmodels">The ClassicModels Business Context</h3>
+
+<p><strong>ClassicModels</strong> is a retailer of die-cast scale model cars. The company sells through regional sales offices worldwide. Each office employs sales representatives who manage customer accounts and process orders for products across several model car lines.</p>
+
+<p>The operational (OLTP) database captures day-to-day transactions across 8 tables:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Table</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>customers</code></td><td>Customer accounts: name, location, credit limit</td></tr>
+    <tr><td><code>employees</code></td><td>Staff: name, title, office, manager (<code>reportsTo</code>)</td></tr>
+    <tr><td><code>offices</code></td><td>Sales office locations by territory</td></tr>
+    <tr><td><code>products</code></td><td>Scale model car catalog: name, price, stock</td></tr>
+    <tr><td><code>productlines</code></td><td>Product categories (Classic Cars, Motorcycles, …)</td></tr>
+    <tr><td><code>orders</code></td><td>Customer orders: date, status, fulfilment dates</td></tr>
+    <tr><td><code>orderdetails</code></td><td>Order line items: product, quantity, unit price</td></tr>
+    <tr><td><code>payments</code></td><td>Payments received from customers by cheque</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The entity-relationship diagram is shown below.</p>
+
+<!-- ER Diagram (HTML replacement for TikZ) -->
+<div class="er-diagram">
+  <div class="er-row">
+    <div class="er-entity">productlines</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">products</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">orderdetails</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">orders</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">customers</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">employees</div>
+    <div class="er-arrow">—</div>
+    <div class="er-entity">offices</div>
+  </div>
+  <div class="er-row" style="margin-top:10px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div class="er-entity">customers</div>
+      <div class="er-arrow">—</div>
+      <div class="er-entity">payments</div>
+    </div>
+    <div style="margin-left:24px;display:flex;align-items:center;gap:6px;">
+      <div class="er-entity" style="border-style:dashed;">employees</div>
+      <div class="er-arrow" style="color:#aaa;">⟲ <span style="font-size:0.75rem;color:#aaa;">reportsTo</span></div>
+    </div>
+  </div>
+  <div class="er-note">Entity-Relationship Diagram — ClassicModels OLTP Database (8 tables)</div>
+</div>
+
+<h3 id="setup">Setup Instructions</h3>
+
+<p>Complete the following steps before proceeding to Part 1.</p>
+
+<h4>Step 1 — Install dependencies</h4>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">pip install dbt-duckdb duckdb</code></pre>
+</div>
+
+<p>Verify:</p>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt --version
+python -c "import duckdb; print(duckdb.__version__)"</code></pre>
+</div>
+
+<h4>Step 2 — Load the source data into DuckDB</h4>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">cd classicmodels_dw
+python load_source.py</code></pre>
+</div>
+
+<p>Expected output:</p>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">Reading ../mysqlsampledatabase.sql...
+Converting MySQL syntax to DuckDB...
+Done. Executed: NNN statements, Errors: 0
+DuckDB file created: classicmodels.duckdb</code></pre>
+</div>
+
+<h4>Step 3 — Verify the dbt connection</h4>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt debug --profiles-dir .</code></pre>
+</div>
+
+<p>Expected: <code>All checks passed!</code></p>
+
+<h4>Step 4 — Explore the source tables</h4>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Confirm 8 tables are accessible</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">SELECT table_name
+FROM   information_schema.tables
+WHERE  table_schema = 'main'
+ORDER  BY table_name;</code></pre>
+</div>
+
+<p>Expected: <code>customers, employees, offices, orderdetails, orders, payments, productlines, products</code></p>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PART 1                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="part1">Part 1: Dimensional Modeling Design</h2>
+
+<p>In this part you will apply the Kimball 4-step process to design three data marts for ClassicModels. <strong>Work through the guided questions before looking at the answer reveals.</strong></p>
+
+<p>You will design:</p>
+<ol>
+  <li><strong>Sales Order Lines</strong> — the core sales fact</li>
+  <li><strong>Customer Payments</strong> — the payment fact</li>
+  <li><strong>Sales Rep Performance</strong> — a monthly aggregate fact</li>
+</ol>
+
+<!-- ── 1.1 ─────────────────────────────────────────────────────────── -->
+<h3 id="bp1">Business Process 1: Sales Order Lines</h3>
+
+<p><strong>Scenario.</strong> The sales director wants a dashboard showing revenue by product line, customer country, and sales office. She also wants to track profit margins across products and time periods.</p>
+
+<div class="box questionbox">
+  <div class="box-title">Guided Questions — Business Process 1: Sales Order Lines</div>
+  <ol>
+    <li>Look at the <code>orderdetails</code> table schema: <code>(orderNumber, productCode, quantityOrdered, priceEach, orderLineNumber)</code>.<br>
+        What real-world event does each row record? What is the most <em>granular</em> event being captured?</li>
+    <li>A customer places a single order containing 5 different products. How many rows appear in <code>orderdetails</code> for this order? What does this tell you about the right <strong>grain</strong> for a sales fact table?</li>
+    <li>The sales director asks: <em>"How much revenue did we earn from Classic Cars in Q3 2004, broken down by sales office?"</em><br>
+        Working backwards from this question — which tables do you need? What <strong>dimensions</strong> (who, what, where, when) are implied?</li>
+    <li>Look at <code>orderdetails.quantityOrdered</code> and <code>priceEach</code>. What <strong>numeric measures</strong> can you directly store? What additional measure could you compute by also bringing in <code>products.buyPrice</code>?</li>
+  </ol>
+</div>
+
+<div class="box worksheetbox">
+  <div class="box-title">Your Turn: Design the Dimensional Model</div>
+  <table class="worksheet-table">
+    <thead>
+      <tr><th>Design Element</th><th>Your Answer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Business Process</strong></td><td>Sales Order Lines</td></tr>
+      <tr><td><strong>Grain</strong> (one row = one …)</td><td><input type="text" placeholder="Type your answer here…"></td></tr>
+      <tr><td><strong>Fact Table Name</strong></td><td><input type="text" placeholder="fct_…"></td></tr>
+      <tr><td><strong>Dimensions</strong></td><td><input type="text" placeholder="dim_…, dim_…, dim_…, dim_…, dim_…"></td></tr>
+      <tr><td><strong>Numeric Measures</strong></td><td><input type="text" placeholder="List your measures here…"></td></tr>
+      <tr><td><strong>Source Tables Needed</strong></td><td><input type="text" placeholder="List the source tables…"></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box revealbox">
+  <div class="box-title">Answer Reveal</div>
+  <p><strong>Grain:</strong> One row per order line item — one specific product in one specific order. Uniquely identified by <code>(orderNumber, productCode)</code> in the source data.</p>
+  <p><strong>Fact table:</strong> <code>fct_order_lines</code></p>
+  <p><strong>Dimensions:</strong></p>
+  <ul>
+    <li><code>dim_date</code> — date the order was placed (<code>orders.orderDate</code>)</li>
+    <li><code>dim_customer</code> — who placed the order</li>
+    <li><code>dim_product</code> — which product was sold (includes product line)</li>
+    <li><code>dim_employee</code> — sales rep managing the customer account</li>
+    <li><code>dim_office</code> — office the sales rep belongs to</li>
+  </ul>
+  <p><strong>Measures:</strong></p>
+  <ul>
+    <li><code>quantity_ordered</code> — units sold</li>
+    <li><code>price_each</code> — selling price per unit</li>
+    <li><code>revenue</code> = <code>quantity_ordered</code> × <code>price_each</code></li>
+    <li><code>buy_price</code> — cost per unit (from <code>products</code>)</li>
+    <li><code>cost</code> = <code>quantity_ordered</code> × <code>buy_price</code></li>
+    <li><code>gross_profit</code> = <code>revenue</code> − <code>cost</code></li>
+  </ul>
+  <p><strong>Star Schema:</strong></p>
+  <!-- Star schema: fct_order_lines — 5 dimensions -->
+  <div class="star-schema">
+    <div class="star-schema-title">fct_order_lines — Star Schema</div>
+    <div class="star-grid star-grid-5">
+      <!-- Row 1: empty | dim_date | empty -->
+      <div></div>
+      <div class="dim-table-box">
+        <div class="dt-name">dim_date</div>
+        <div class="dt-fields">date_id, year, quarter, month</div>
+      </div>
+      <div></div>
+      <!-- Row 2: dim_customer | ↓ arrow | dim_product -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="dim-table-box">
+          <div class="dt-name">dim_customer</div>
+          <div class="dt-fields">customer_key, name, country</div>
+        </div>
+        <div class="star-connector">→</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="star-connector">↓</div>
+        <div class="fact-table-box">
+          <div class="ft-name">fct_order_lines</div>
+          <div class="ft-fields">
+            order_id, order_date_id<br>
+            customer_key, product_key<br>
+            sales_rep_key, office_key<br>
+            quantity_ordered, revenue<br>
+            cost, gross_profit
+          </div>
+        </div>
+        <div class="star-connector">↓</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="star-connector">←</div>
+        <div class="dim-table-box">
+          <div class="dt-name">dim_product</div>
+          <div class="dt-fields">product_key, name, product_line</div>
+        </div>
+      </div>
+      <!-- Row 3: dim_employee | empty | dim_office -->
+      <div class="dim-table-box">
+        <div class="dt-name">dim_employee</div>
+        <div class="dt-fields">employee_key, full_name, title</div>
+      </div>
+      <div></div>
+      <div class="dim-table-box">
+        <div class="dt-name">dim_office</div>
+        <div class="dt-fields">office_key, city, territory</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ── 1.2 ─────────────────────────────────────────────────────────── -->
+<h3 id="bp2">Business Process 2: Customer Payments</h3>
+
+<p><strong>Scenario.</strong> The finance team needs to track revenue <em>received</em> (not just ordered). They want to know which months had the highest cash inflow, and which customers pay most regularly.</p>
+
+<div class="box questionbox">
+  <div class="box-title">Guided Questions — Business Process 2: Customer Payments</div>
+  <ol>
+    <li>Examine the <code>payments</code> table: <code>(customerNumber, checkNumber, paymentDate, amount)</code>. What real-world event does each row represent? Is this the same event as an order line? Why does it deserve its own separate fact table?</li>
+    <li>The finance analyst asks: <em>"Which month in 2004 had the highest total payment received?"</em> At what grain should the fact table operate to answer this?</li>
+    <li>What contextual <strong>dimensions</strong> would help analyze payments? Note that <code>payments</code> has no direct link to employees or products — is that a problem?</li>
+    <li>The <code>payments</code> table has only one numeric column: <code>amount</code>. Is one measure enough for a useful fact table?</li>
+  </ol>
+</div>
+
+<div class="box worksheetbox">
+  <div class="box-title">Your Turn: Design the Dimensional Model</div>
+  <table class="worksheet-table">
+    <thead>
+      <tr><th>Design Element</th><th>Your Answer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Business Process</strong></td><td>Customer Payments</td></tr>
+      <tr><td><strong>Grain</strong> (one row = one …)</td><td><input type="text" placeholder="Type your answer here…"></td></tr>
+      <tr><td><strong>Fact Table Name</strong></td><td><input type="text" placeholder="fct_…"></td></tr>
+      <tr><td><strong>Dimensions</strong></td><td><input type="text" placeholder="dim_…, dim_…"></td></tr>
+      <tr><td><strong>Numeric Measures</strong></td><td><input type="text" placeholder="List your measures here…"></td></tr>
+      <tr><td><strong>Source Tables Needed</strong></td><td><input type="text" placeholder="List the source tables…"></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box revealbox">
+  <div class="box-title">Answer Reveal</div>
+  <p><strong>Grain:</strong> One row per payment transaction — one cheque received from one customer on one date. Identified by <code>(customerNumber, checkNumber)</code>.</p>
+  <p><em>Why a separate fact table?</em> Orders and payments are different events. A customer can place an order today and pay weeks later. Mixing them in one table would violate the single-grain rule.</p>
+  <p><strong>Fact table:</strong> <code>fct_payments</code></p>
+  <p><strong>Dimensions:</strong></p>
+  <ul>
+    <li><code>dim_date</code> — the payment date</li>
+    <li><code>dim_customer</code> — who made the payment</li>
+  </ul>
+  <p>The absence of employee and product dimensions is <em>correct</em> — <code>payments</code> simply does not record them. Analysts who want to correlate payments with sales reps can join <code>fct_payments</code> and <code>fct_order_lines</code> through shared <code>dim_customer</code>.</p>
+  <p><strong>Measure:</strong> <code>amount</code> — one additive measure is enough.</p>
+  <p><strong>Star Schema:</strong></p>
+  <!-- Star schema: fct_payments — 2 dimensions -->
+  <div class="star-schema">
+    <div class="star-schema-title">fct_payments — Star Schema</div>
+    <div class="star-grid star-grid-2">
+      <!-- Row 1: empty | dim_date | empty -->
+      <div></div>
+      <div class="dim-table-box">
+        <div class="dt-name">dim_date</div>
+        <div class="dt-fields">date_id, year, month</div>
+      </div>
+      <div></div>
+      <!-- Row 2: dim_customer | ↓ arrow | fact -->
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div class="dim-table-box">
+          <div class="dt-name">dim_customer</div>
+          <div class="dt-fields">customer_key, name, country</div>
+        </div>
+        <div class="star-connector">→</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="star-connector">↓</div>
+        <div class="fact-table-box">
+          <div class="ft-name">fct_payments</div>
+          <div class="ft-fields">
+            check_number (degenerate dim)<br>
+            payment_date_id, customer_key<br>
+            amount
+          </div>
+        </div>
+      </div>
+      <div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ── 1.3 ─────────────────────────────────────────────────────────── -->
+<h3 id="bp3">Business Process 3: Sales Rep Performance</h3>
+
+<p><strong>Scenario.</strong> The VP of Sales wants a monthly leaderboard of sales representatives showing total revenue, number of orders, and unique customers served, with roll-up by office and territory.</p>
+
+<div class="box questionbox">
+  <div class="box-title">Guided Questions — Business Process 3: Sales Rep Performance</div>
+  <ol>
+    <li>There is no single "Sales Rep Performance" table in the source database. Which tables and facts would you combine to compute a rep's monthly performance?<br>
+        <em>Hint:</em> trace the path from <code>orderdetails</code> through <code>orders</code> to <code>customers</code> to <code>employees</code>.</li>
+    <li>Should the grain be: (a) one row per order line, (b) one row per order, or (c) one row per sales rep per month? Explain the trade-off between granularity and query speed.</li>
+    <li>What <strong>dimensions</strong> provide context for a sales rep performance analysis? Consider who the rep is, where they work, and when.</li>
+    <li>What <strong>measures</strong> best capture "performance"? Think beyond total revenue — what would a VP find useful?</li>
+  </ol>
+</div>
+
+<div class="box worksheetbox">
+  <div class="box-title">Your Turn: Design the Dimensional Model</div>
+  <table class="worksheet-table">
+    <thead>
+      <tr><th>Design Element</th><th>Your Answer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Business Process</strong></td><td>Sales Rep Performance (Monthly)</td></tr>
+      <tr><td><strong>Grain</strong> (one row = one …)</td><td><input type="text" placeholder="Type your answer here…"></td></tr>
+      <tr><td><strong>Fact Table Name</strong></td><td><input type="text" placeholder="fct_…"></td></tr>
+      <tr><td><strong>Dimensions</strong></td><td><input type="text" placeholder="List dimensions…"></td></tr>
+      <tr><td><strong>Numeric Measures</strong></td><td><input type="text" placeholder="List your measures here…"></td></tr>
+      <tr><td><strong>Source / Derived From</strong></td><td><input type="text" placeholder="Which table(s) or models…"></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box revealbox">
+  <div class="box-title">Answer Reveal</div>
+  <p><strong>Grain:</strong> One row per sales representative per calendar month. This is a <strong>periodic snapshot</strong> fact table.</p>
+  <p><strong>Derived from:</strong> <code>fct_order_lines</code> aggregated by rep and month. This is the fact-on-fact pattern in dbt.</p>
+  <p><strong>Fact table:</strong> <code>fct_sales_performance</code></p>
+  <p><strong>Dimensions:</strong></p>
+  <ul>
+    <li><code>dim_employee</code> — the sales representative</li>
+    <li><code>dim_office</code> — the office they belong to (enables territory rollup)</li>
+    <li><code>month_date</code> — first day of the performance month</li>
+  </ul>
+  <p><strong>Measures:</strong></p>
+  <ul>
+    <li><code>order_count</code> — number of distinct orders</li>
+    <li><code>unique_customers</code> — distinct customers served</li>
+    <li><code>total_units_sold</code> — total quantity across all lines</li>
+    <li><code>total_revenue</code> — sum of revenue</li>
+    <li><code>total_gross_profit</code> — sum of gross profit</li>
+    <li><code>avg_order_line_revenue</code> — average revenue per order line</li>
+  </ul>
+  <p><strong>Star Schema:</strong></p>
+  <!-- Star schema: fct_sales_performance — 3 dimensions -->
+  <div class="star-schema">
+    <div class="star-schema-title">fct_sales_performance — Star Schema</div>
+    <div class="star-grid star-grid-3">
+      <!-- Row 1: empty | dim_employee | empty -->
+      <div></div>
+      <div class="dim-table-box">
+        <div class="dt-name">dim_employee</div>
+        <div class="dt-fields">employee_key, full_name, title</div>
+      </div>
+      <div></div>
+      <!-- Row 2: dim_office | ↓ → fact | month_date -->
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div class="dim-table-box">
+          <div class="dt-name">dim_office</div>
+          <div class="dt-fields">office_key, city, territory</div>
+        </div>
+        <div class="star-connector">→</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="star-connector">↓</div>
+        <div class="fact-table-box">
+          <div class="ft-name">fct_sales_performance</div>
+          <div class="ft-fields">
+            sales_rep_key, office_key, month_date<br>
+            order_count, unique_customers<br>
+            total_revenue, total_gross_profit
+          </div>
+        </div>
+        <div class="star-connector">↓</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div class="star-connector">←</div>
+        <div class="dim-table-box">
+          <div class="dt-name">month_date (DATE)</div>
+          <div class="dt-fields">year, month</div>
+        </div>
+      </div>
+      <!-- Row 3: empty | source note | empty -->
+      <div></div>
+      <div class="source-note-box">
+        aggregated from<br><strong>fct_order_lines</strong>
+      </div>
+      <div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PART 2                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="part2">Part 2: Introduction to dbt</h2>
+
+<p>Now that you have designed the dimensional model, you will implement it using <strong>dbt</strong> (data build tool) — the industry-standard tool for the Transform step in modern ELT pipelines.</p>
+
+<h3 id="what-is-dbt">What is dbt?</h3>
+
+<div class="box infobox">
+  <div class="box-title">ELT vs. ETL</div>
+  <p>Traditional ETL pipelines <em>Extract</em> from sources, <em>Transform</em> outside the warehouse, then <em>Load</em>. Modern ELT pipelines <em>Extract</em> and <em>Load</em> raw data first, then <em>Transform</em> it <em>inside</em> the warehouse using SQL.</p>
+  <p><strong>dbt handles the T in ELT.</strong> It takes raw tables already in your database and transforms them into clean, modelled tables — all using plain SQL <code>SELECT</code> statements. dbt is <em>not</em> responsible for extraction. In this lab, <code>load_source.py</code> handles that.</p>
+</div>
+
+<h3 id="key-concepts">Key Concepts</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Concept</th><th>Explanation</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Model</strong></td>
+      <td>A <code>.sql</code> file containing a <code>SELECT</code> statement. dbt materialises it as a view or table. One file = one model.</td>
+    </tr>
+    <tr>
+      <td><strong><code>ref()</code></strong></td>
+      <td>References another dbt model: <code>{{ ref('stg_orders') }}</code>. dbt resolves the correct schema and determines build order.</td>
+    </tr>
+    <tr>
+      <td><strong>Source</strong></td>
+      <td>A raw table not managed by dbt. Declared in <code>sources.yml</code> and referenced with <code>{{ source('classicmodels', 'orders') }}</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Materialization</strong></td>
+      <td>How dbt stores a model. <code>view</code> = SQL view (no data stored), <code>table</code> = physical table rebuilt on each <code>dbt run</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>DAG</strong></td>
+      <td>Directed Acyclic Graph. dbt builds this automatically from your <code>ref()</code> calls and executes models in the correct order.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="three-layer">Three-Layer Architecture</h3>
+
+<p>We structure all models in three layers. Each layer has one responsibility:</p>
+
+<!-- Three-Layer Architecture Diagram -->
+<div class="arch-diagram">
+  <div class="arch-layer src">
+    <div class="layer-label">Source Layer</div>
+    <div class="layer-sub"><code>main.*</code> &nbsp;—&nbsp; Raw tables loaded by <code>load_source.py</code></div>
+  </div>
+  <div class="arch-arrow">↓</div>
+  <div class="arch-layer stg">
+    <div class="layer-label">Staging Layer</div>
+    <div class="layer-sub"><code>stg_*</code> (views) &nbsp;—&nbsp; Rename columns, cast types — no business logic</div>
+  </div>
+  <div class="arch-arrow">↓</div>
+  <div class="arch-layer dim">
+    <div class="layer-label">Dimension Layer</div>
+    <div class="layer-sub"><code>dim_*</code> (tables) &nbsp;—&nbsp; Conformed dimensions with surrogate keys</div>
+  </div>
+  <div class="arch-arrow">↓</div>
+  <div class="arch-layer mart">
+    <div class="layer-label">Mart Layer</div>
+    <div class="layer-sub"><code>fct_*</code> (tables) &nbsp;—&nbsp; Fact tables joining dimensions with numeric measures</div>
+  </div>
+</div>
+
+<h3 id="project-structure">Project Structure</h3>
+
+<div class="code-block yaml-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-yaml">classicmodels_dw/
+  dbt_project.yml      # project name, profile, materialization settings
+  profiles.yml         # DuckDB connection (path to .duckdb file)
+  load_source.py       # converts MySQL dump to DuckDB
+  models/
+    sources.yml        # declares the 8 raw source tables
+    staging/           # stg_* views  (one per source table)
+    dimensions/        # dim_* tables (5 conformed dimensions)
+    marts/             # fct_* tables (3 fact tables / data marts)</code></pre>
+</div>
+
+<h3 id="dbt-commands">Essential dbt Commands</h3>
+
+<p>All commands run from the <code>classicmodels_dw/</code> directory.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Command</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>dbt debug --profiles-dir .</code></td><td>Verify the DuckDB connection</td></tr>
+    <tr><td><code>dbt run --profiles-dir .</code></td><td>Build all 16 models</td></tr>
+    <tr><td><code>dbt run --profiles-dir . --select stg_orders</code></td><td>Build one model</td></tr>
+    <tr><td><code>dbt run --profiles-dir . --select staging</code></td><td>Build all staging models</td></tr>
+    <tr><td><code>dbt run --profiles-dir . --select +fct_order_lines</code></td><td>Build a model and all upstream</td></tr>
+    <tr><td><code>dbt ls --profiles-dir .</code></td><td>List all models</td></tr>
+    <tr><td><code>dbt docs generate --profiles-dir .</code></td><td>Generate DAG documentation</td></tr>
+    <tr><td><code>dbt docs serve --profiles-dir .</code></td><td>Open docs in browser</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PART 3                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 id="part3">Part 3: Building the Data Marts with dbt</h2>
+
+<p>Work through each step in order. At the end of each step, run a checkpoint query to verify the output before continuing.</p>
+
+<!-- ── Step 1 ─────────────────────────────────────────────────────── -->
+<h3 id="step1">Step 1: Verify the Source Data</h3>
+
+<p>Before building, confirm the raw tables loaded correctly.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Explore source table contents</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">-- Check table sizes
+SELECT table_name
+FROM   information_schema.tables
+WHERE  table_schema = 'main'
+ORDER  BY table_name;
+
+-- Preview the order chain
+SELECT o.orderNumber,
+       o.orderDate,
+       o.status,
+       c.customerName,
+       c.country
+FROM   orders o
+JOIN   customers c USING (customerNumber)
+LIMIT  10;</code></pre>
+</div>
+
+<!-- ── Step 2 ─────────────────────────────────────────────────────── -->
+<h3 id="step2">Step 2: Build the Staging Layer</h3>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt run --profiles-dir . --select staging</code></pre>
+</div>
+
+<p>Staging models are <strong>views</strong> — they add no storage overhead but give all downstream models clean, consistent column names.</p>
+
+<p>Open <code>models/staging/stg_orders.sql</code>:</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/staging/stg_orders.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    orderNumber    as order_id,
+    orderDate      as order_date,
+    requiredDate   as required_date,
+    shippedDate    as shipped_date,
+    status         as order_status,
+    comments       as comments,
+    customerNumber as customer_id
+from {{ source('classicmodels', 'orders') }}</code></pre>
+</div>
+
+<p>Notice:</p>
+<ul>
+  <li><code>{{ source(…) }}</code> tells dbt this reads a raw source table declared in <code>sources.yml</code>.</li>
+  <li>All column names are renamed to <code>snake_case</code>.</li>
+  <li>No business logic — no calculations, no filters.</li>
+</ul>
+
+<p>Open <code>models/staging/stg_orderdetails.sql</code>:</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/staging/stg_orderdetails.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    orderNumber      as order_id,
+    productCode      as product_code,
+    quantityOrdered  as quantity_ordered,
+    priceEach        as price_each,
+    orderLineNumber  as order_line_number
+from {{ source('classicmodels', 'orderdetails') }}</code></pre>
+</div>
+
+<div class="box checkpointbox">
+  <div class="box-title">Checkpoint</div>
+  <div class="code-block sql-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><code class="language-sql">SELECT order_id, order_date, order_status, customer_id
+FROM   stg_orders
+LIMIT  5;
+
+SELECT order_id, product_code, quantity_ordered, price_each
+FROM   stg_orderdetails
+LIMIT  5;</code></pre>
+  </div>
+  <p>Expected: <code>snake_case</code> column names, no nulls in key columns.</p>
+</div>
+
+<!-- ── Step 3 ─────────────────────────────────────────────────────── -->
+<h3 id="step3">Step 3: Build the Dimension Models</h3>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt run --profiles-dir . --select dimensions</code></pre>
+</div>
+
+<h4>dim_date — Generated Date Dimension</h4>
+
+<p>Unlike every other dimension, <code>dim_date</code> has no source table — it is generated using DuckDB's <code>generate_series</code>.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/dimensions/dim_date.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">with date_spine as (
+    -- Date range covers all ClassicModels order dates.
+    -- Extended to full calendar years for clean reporting.
+    select generate_series::date as date_day
+    from generate_series(
+        date '2003-01-01',
+        date '2006-12-31',
+        interval '1 day'
+    )
+)
+select
+    date_day                                as date_id,
+    date_day                                as full_date,
+    extract('year'    from date_day)::int   as year,
+    extract('quarter' from date_day)::int   as quarter,
+    extract('month'   from date_day)::int   as month,
+    strftime('%B', date_day)                as month_name,
+    extract('week'    from date_day)::int   as week_of_year,
+    extract('day'     from date_day)::int   as day_of_month,
+    extract('dow'     from date_day)::int   as day_of_week,
+    strftime('%A', date_day)                as day_name,
+    (extract('dow' from date_day) in (0, 6)) as is_weekend
+from date_spine</code></pre>
+</div>
+
+<h4>dim_product — Joining Across Staging Models</h4>
+
+<p><code>dim_product</code> enriches products with their line descriptions by joining two staging models. The <code>ref()</code> calls ensure <code>stg_productlines</code> is built before <code>dim_product</code>.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/dimensions/dim_product.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    row_number() over (order by p.product_code)   as product_key,
+    p.product_code,
+    p.product_name,
+    p.product_line,
+    pl.text_description                           as product_line_description,
+    p.product_scale,
+    p.product_vendor,
+    p.buy_price,
+    p.msrp
+from {{ ref('stg_products') }} p
+left join {{ ref('stg_productlines') }} pl
+    on p.product_line = pl.product_line</code></pre>
+</div>
+
+<div class="box infobox">
+  <div class="box-title">Surrogate Keys</div>
+  <p><code>row_number() over (order by product_code)</code> generates a <strong>surrogate key</strong> — an integer that uniquely identifies each dimension row, independent of the source system's natural key (<code>product_code</code>). Fact tables reference dimension rows via these integer keys.</p>
+</div>
+
+<h4>dim_employee — Self-Join for Hierarchy</h4>
+
+<p>The <code>employees</code> table is self-referential (<code>reportsTo</code>). We resolve the manager's name with a self-join on the staging model.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/dimensions/dim_employee.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    row_number() over (order by e.employee_id)       as employee_key,
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    e.first_name || ' ' || e.last_name               as full_name,
+    e.job_title,
+    e.email,
+    e.office_code,
+    e.reports_to_employee_id,
+    mgr.first_name || ' ' || mgr.last_name           as manager_full_name
+from {{ ref('stg_employees') }} e
+left join {{ ref('stg_employees') }} mgr
+    on e.reports_to_employee_id = mgr.employee_id</code></pre>
+</div>
+
+<div class="box checkpointbox">
+  <div class="box-title">Checkpoint</div>
+  <div class="code-block sql-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><code class="language-sql">-- dim_date: verify range and count
+SELECT MIN(date_id), MAX(date_id), COUNT(*) AS total_days
+FROM   dim_date;
+-- Expected: 2003-01-01, 2006-12-31, 1461
+
+-- dim_employee: verify manager hierarchy resolved
+SELECT full_name, job_title, manager_full_name
+FROM   dim_employee
+ORDER  BY employee_id;</code></pre>
+  </div>
+</div>
+
+<!-- ── Step 4 ─────────────────────────────────────────────────────── -->
+<h3 id="step4">Step 4: Build the Fact Tables</h3>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt run --profiles-dir . --select marts</code></pre>
+</div>
+
+<h4>fct_order_lines — The Core Sales Fact</h4>
+
+<p>Every order line item becomes one row. We join to dimension tables using the surrogate keys established in the previous step.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/marts/fct_order_lines.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    od.order_id,
+    od.order_line_number,
+    o.order_date                           as order_date_id,
+    dc.customer_key,
+    dp.product_key,
+    de.employee_key                        as sales_rep_key,
+    dof.office_key,
+    od.quantity_ordered,
+    od.price_each,
+    round(od.quantity_ordered * od.price_each, 2)  as revenue,
+    dp.buy_price,
+    round(od.quantity_ordered * dp.buy_price, 2)   as cost,
+    round(
+        (od.quantity_ordered * od.price_each)
+      - (od.quantity_ordered * dp.buy_price), 2
+    )                                      as gross_profit
+from {{ ref('stg_orderdetails') }} od
+join {{ ref('stg_orders') }} o
+    on od.order_id = o.order_id
+join {{ ref('dim_customer') }} dc
+    on o.customer_id = dc.customer_id
+join {{ ref('dim_product') }} dp
+    on od.product_code = dp.product_code
+left join {{ ref('dim_employee') }} de
+    on dc.sales_rep_employee_id = de.employee_id
+left join {{ ref('dim_office') }} dof
+    on de.office_code = dof.office_code</code></pre>
+</div>
+
+<p>Why <code>LEFT JOIN</code> for employee and office? Some customers have no assigned sales representative (<code>sales_rep_employee_id IS NULL</code>). Using <code>LEFT JOIN</code> preserves those order lines instead of silently dropping them. Note that <code>buy_price</code> is denormalized from <code>dim_product</code> into the fact table so margin calculations can be done in a single scan, without requiring an additional join at query time.</p>
+
+<h4>fct_payments — The Payment Fact</h4>
+
+<p>A narrower fact: two dimensions, one measure. <code>check_number</code> is kept as a <strong>degenerate dimension</strong> (no separate dimension table, but useful for tracing individual payments).</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/marts/fct_payments.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    p.check_number,
+    p.payment_date               as payment_date_id,
+    dc.customer_key,
+    p.amount
+from {{ ref('stg_payments') }} p
+join {{ ref('dim_customer') }} dc
+    on p.customer_id = dc.customer_id</code></pre>
+</div>
+
+<h4>fct_sales_performance — Monthly Aggregate Fact</h4>
+
+<p>This periodic snapshot uses <code>ref('fct_order_lines')</code> — a fact-on-fact reference, aggregated by rep and calendar month.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">models/marts/fct_sales_performance.sql</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">select
+    sales_rep_key,
+    office_key,
+    date_trunc('month', order_date_id)::date     as month_date,
+    extract('year'  from order_date_id)::int     as year,
+    extract('month' from order_date_id)::int     as month,
+    count(distinct order_id)                     as order_count,
+    count(distinct customer_key)                 as unique_customers,
+    sum(quantity_ordered)                        as total_units_sold,
+    round(sum(revenue), 2)                       as total_revenue,
+    round(sum(gross_profit), 2)                  as total_gross_profit,
+    round(avg(revenue), 2)                       as avg_order_line_revenue
+from {{ ref('fct_order_lines') }}
+-- Orders with no assigned sales rep are excluded (rep-level analysis only).
+where sales_rep_key is not null
+group by 1, 2, 3, 4, 5</code></pre>
+</div>
+
+<!-- ── Step 5 ─────────────────────────────────────────────────────── -->
+<h3 id="step5">Step 5: Explore Your Data Marts</h3>
+
+<p>With all three data marts built, run the business queries below. These are the questions that motivated the entire warehouse design.</p>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Revenue by product line with margin</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">SELECT
+    p.product_line,
+    SUM(f.revenue)              AS total_revenue,
+    SUM(f.gross_profit)         AS total_gross_profit,
+    COUNT(DISTINCT f.order_id)  AS order_count,
+    ROUND(SUM(f.gross_profit) /
+          NULLIF(SUM(f.revenue),0) * 100, 1) AS gross_margin_pct
+FROM   fct_order_lines f
+JOIN   dim_product p ON f.product_key = p.product_key
+GROUP  BY p.product_line
+ORDER  BY total_revenue DESC;</code></pre>
+</div>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Top 5 customers by total payments received</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">SELECT
+    c.customer_name,
+    c.country,
+    SUM(fp.amount)   AS total_paid,
+    COUNT(*)         AS payment_count
+FROM   fct_payments fp
+JOIN   dim_customer c ON fp.customer_key = c.customer_key
+GROUP  BY c.customer_name, c.country
+ORDER  BY total_paid DESC
+LIMIT  5;</code></pre>
+</div>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Top sales reps in 2004</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">SELECT
+    e.full_name,
+    e.job_title,
+    o.territory,
+    SUM(sp.total_revenue)    AS ytd_revenue,
+    SUM(sp.order_count)      AS total_orders,
+    SUM(sp.unique_customers) AS customers_served
+FROM   fct_sales_performance sp
+JOIN   dim_employee e ON sp.sales_rep_key = e.employee_key
+JOIN   dim_office   o ON sp.office_key    = o.office_key
+WHERE  sp.year = 2004
+GROUP  BY e.full_name, e.job_title, o.territory
+ORDER  BY ytd_revenue DESC
+LIMIT  5;</code></pre>
+</div>
+
+<div class="code-block sql-block">
+  <div class="code-caption">Monthly revenue trend</div>
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-sql">SELECT
+    dd.year,
+    dd.month,
+    dd.month_name,
+    SUM(f.revenue)  AS monthly_revenue
+FROM   fct_order_lines f
+JOIN   dim_date dd ON f.order_date_id = dd.date_id
+GROUP  BY dd.year, dd.month, dd.month_name
+ORDER  BY dd.year, dd.month;</code></pre>
+</div>
+
+<div class="box checkpointbox">
+  <div class="box-title">Checkpoint</div>
+  <p>Verify your results:</p>
+  <ol>
+    <li>Classic Cars has the highest revenue among all product lines.</li>
+    <li>Total revenue across all time is approximately $9.6 million.</li>
+    <li>At least one top-5 sales rep in 2004 is from the EMEA or APAC territory.</li>
+    <li>Monthly revenue shows seasonal variation with peaks in late 2003 and 2004.</li>
+  </ol>
+  <p>If any result does not match, re-run <code>dbt run --profiles-dir . --full-refresh</code> and check for errors.</p>
+</div>
+
+<!-- ── Step 6 ─────────────────────────────────────────────────────── -->
+<h3 id="step6">Step 6: Visualise the dbt DAG</h3>
+
+<div class="code-block bash-block">
+  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  <pre><code class="language-bash">dbt docs generate --profiles-dir .
+dbt docs serve --profiles-dir .</code></pre>
+</div>
+
+<p>Open <code>http://localhost:8080</code> in your browser and navigate to the <strong>Lineage Graph</strong> tab. You should see the complete DAG: source tables feeding staging views, staging feeding dimensions and marts, and <code>fct_sales_performance</code> depending on <code>fct_order_lines</code>.</p>
+
+<div class="box infobox">
+  <div class="box-title">What You Have Built</div>
+  <ul>
+    <li><strong>8 staging models</strong> (views) — clean, standardised representations of all source tables</li>
+    <li><strong>5 dimension models</strong> (tables) — <code>dim_date</code>, <code>dim_customer</code>, <code>dim_product</code>, <code>dim_employee</code>, <code>dim_office</code></li>
+    <li><strong>3 fact tables</strong> (tables) — <code>fct_order_lines</code>, <code>fct_payments</code>, <code>fct_sales_performance</code></li>
+    <li><strong>16 models total</strong>, built and verified end-to-end</li>
+  </ul>
+  <p>You have transformed a normalised OLTP database into a dimensional data warehouse following the Kimball methodology: source analysis, dimensional design, ELT implementation (via dbt), and analytical validation.</p>
+</div>
+
+</div><!-- /.page-wrapper -->
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- SCRIPTS                                                             -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script>
+  // Initialize highlight.js
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('pre code').forEach(function (block) {
+      hljs.highlightElement(block);
+    });
+  });
+
+  // Copy-to-clipboard function
+  function copyCode(btn) {
+    const codeEl = btn.closest('.code-block').querySelector('code');
+    // Use innerText to get the visible text (not HTML entities)
+    const text = codeEl.innerText;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+    }).catch(function () {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
