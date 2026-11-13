@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: dim_product
+    description: "Dimensi produk (SCD Type 1): hanya versi terbaru tiap product_id."
+    columns:
+      - name: product_key
+        description: "Surrogate key."
+        data_tests: [unique, not_null]
+      - name: product_id
+        description: "Natural key dari sistem sumber."
+        data_tests: [unique, not_null]
+  - name: dim_warehouse
+    description: "Dimensi gudang (SCD Type 1)."
+    columns:
+      - name: warehouse_key
+        data_tests: [unique, not_null]
+      - name: warehouse_id
+        data_tests: [unique, not_null]
+  - name: dim_movement_type
+    description: "Dimensi tipe pergerakan beserta arah (tanda) pengaruhnya ke stok."
+    columns:
+      - name: movement_type_key
+        data_tests: [unique, not_null]
+      - name: movement_type
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PURCHASE, SALE, TRANSFER, LOST, DAMAGED, FOUND]
+  - name: dim_date
+    description: "Dimensi tanggal (kalender penuh), smart key YYYYMMDD."
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+      - name: full_date
+        data_tests: [unique, not_null]

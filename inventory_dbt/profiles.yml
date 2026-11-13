@@ -1,0 +1,18 @@
+# profiles.yml — koneksi basis data. Disimpan di folder proyek; jalankan dbt dengan --profiles-dir .
+inventory_dbt:
+  target: dev                   # target bawaan
+  outputs:
+    dev:                        # Opsi B: komputer lokal, DuckDB (tanpa server)
+      type: duckdb
+      path: inventory.duckdb    # berkas basis data, relatif terhadap folder proyek
+      threads: 4
+    postgres:                   # Opsi A: Google Colab + Neon PostgreSQL
+      type: postgres
+      host: "{{ env_var('NEON_HOST') }}"
+      user: "{{ env_var('NEON_USER') }}"
+      password: "{{ env_var('NEON_PASSWORD') }}"   # tidak pernah ditulis langsung di berkas
+      dbname: "{{ env_var('NEON_DB') }}"
+      port: 5432
+      schema: analytics_dbt     # skema tempat dbt membuat view/tabel
+      sslmode: require
+      threads: 4

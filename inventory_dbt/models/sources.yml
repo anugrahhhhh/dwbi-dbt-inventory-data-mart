@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: inventory_oltp
+    description: "Tabel mentah hasil Extract & Load (scripts/load_source.py)."
+    schema: "{{ 'public' if target.type == 'postgres' else 'main' }}"
+    tables:
+      - name: source_products
+        description: "Master produk; satu produk dapat muncul beberapa kali (versi lama)."
+      - name: source_warehouses
+        description: "Master gudang; satu gudang dapat muncul beberapa kali (versi lama)."
+      - name: source_inventory_movements
+        description: "Log pergerakan stok: satu baris = satu transaksi."
+        columns:
+          - name: transaction_id
+            description: "Kunci transaksi."
+            data_tests: [unique, not_null]
