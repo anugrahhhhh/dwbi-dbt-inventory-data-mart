@@ -1,10 +1,12 @@
 \documentclass[oneside,a4paper,11pt,explicit]{book}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[sedes]{kultem}
 \usepackage[english]{babel}
 \usepackage{mdframed}
 \usepackage{minitoc}
 \usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
 \usepackage{enumitem}
 \usepackage{comment}
 \usepackage{subfig}
@@ -12,7 +14,7 @@
 \usepackage{titlesec}
 \usepackage{multicol}
 \usepackage[semicolon,round,sort&compress,sectionbib]{natbib}  %
-\usepackage{chapterbib}
+% chapterbib dilepas: modul memakai satu Daftar Pustaka di akhir dokumen
 
 \titlespacing{\section}{0pt}{\parskip}{-.5\parskip}
 \titlespacing{\subsection}{0pt}{\parskip}{-.5\parskip}
@@ -20,8 +22,16 @@
 %% INSERT YOUR PACKAGES HERE
 \usepackage[accsupp]{axessibility}  % improves PDF readability for those with disabilities.
 \usepackage[hidelinks]{hyperref}
-\usepackage{lipsum}
+\usepackage{xurl}
 \usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{pifont}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.multipart,fit,calc}
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
@@ -30,11 +40,15 @@
 \renewcommand{\partname}{Bagian}
 \addto\captionsenglish{%
   \renewcommand{\contentsname}{Daftar Isi}%
+  \renewcommand{\partname}{Bagian}%
   \renewcommand{\chaptername}{Bab}
   \renewcommand{\bibname}{Daftar Pustaka}
   \renewcommand{\figurename}{Gambar}
   \renewcommand{\tablename}{Tabel}
   \renewcommand{\listfigurename}{Daftar Gambar}
+  \renewcommand{\listtablename}{Daftar Tabel}
+  \renewcommand{\indexname}{Indeks}
+  \renewcommand{\appendixname}{Lampiran}
     \renewcommand{\mtctitle}{Isi Bab}
 }
 %\renewcommand{\contentsname}{Daftar Isi}
@@ -47,7 +61,7 @@
 \newcommand{\birubold}[1]{{\color{blue}\bfseries #1}}
 \newcommand{\tekshijau}[1]{{\color{green} #1}}
 \newcommand{\teksungu}[1]{{\fontfamily{lmss}\selectfont\itshape #1}}
-  
+
 \newtcolorbox{mybox}[2][]{%
  % attach boxed title to top center
  %             = {yshift=-8pt},
@@ -59,20 +73,64 @@
  % enhanced,
 }
 
+%% ---- Kotak konvensi modul -------------------------------------------------
+\newtcolorbox{tips}[1][Tips]{breakable, colback=green!4!white, colframe=green!45!black,
+  fonttitle=\bfseries, title={\ding{43}~#1}}
+\newtcolorbox{perhatian}[1][Perhatian]{breakable, colback=red!4!white, colframe=red!65!black,
+  fonttitle=\bfseries, title={\ding{54}~#1}}
+\newtcolorbox{cekberhasil}[1][Cek keberhasilan]{breakable, colback=yellow!8!white, colframe=orange!75!black,
+  fonttitle=\bfseries, title={\ding{51}~#1}}
+\newtcolorbox{info}[1][Info]{breakable, colback=blue!4!white, colframe=blue!60!black,
+  fonttitle=\bfseries, title={\ding{118}~#1}}
+
+%% ---- Gaya kode ------------------------------------------------------------
 \definecolor{delim}{RGB}{20,105,176}
 \definecolor{numb}{RGB}{106, 109, 32}
 \definecolor{string}{rgb}{0.64,0.08,0.08}
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null},
+  comment=[l]{\#}, morestring=[b]', morestring=[b]",
+  sensitive=false}
+\lstset{
+  backgroundcolor=\color{backcolour},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{delim}\bfseries,
+  commentstyle=\color{codegreen}\itshape,
+  stringstyle=\color{string},
+  numberstyle=\tiny\color{codegray},
+  numbers=left, numbersep=6pt, stepnumber=1,
+  frame=single, rulecolor=\color{codegray},
+  breaklines=true, breakatwhitespace=false, postbreak=\mbox{\textcolor{codegray}{$\hookrightarrow$}\space},
+  columns=fullflexible, keepspaces=true, showstringspaces=false,
+  tabsize=4, captionpos=b, aboveskip=0.6em, belowskip=0.6em,
+  upquote=true,
+  literate={–}{{--}}1 {—}{{---}}1 {→}{{$\rightarrow$}}1 {×}{{$\times$}}1 {≥}{{$\geq$}}1 {≤}{{$\leq$}}1
+}
+\lstdefinestyle{sql}{language=SQL, morekeywords={with,recursive,over,partition,qualify,nulls,last,
+  interval,extract,coalesce,nullif,cast,bigint,rows,unbounded,preceding,current,row,distinct}}
+\lstdefinestyle{term}{language={}, numbers=none, backgroundcolor=\color{black!85},
+  basicstyle=\ttfamily\footnotesize\color{white}, rulecolor=\color{black}}
+\lstdefinestyle{yml}{language=yaml}
+\lstdefinestyle{py}{language=Python, morekeywords={as}}
+\renewcommand{\lstlistingname}{Kode}
+\renewcommand{\lstlistlistingname}{Daftar Kode}
+
+\newcommand{\kode}[1]{\texttt{#1}}          % kode pendek dalam kalimat
+\newcommand{\istilah}[1]{\textit{#1}}      % istilah asing
+\newcommand{\cmd}[1]{\colorbox{black!8}{\texttt{#1}}}
 
 \setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
 \usepackage{amsmath} % Used by equations
 \usepackage{makeidx}
 \makeindex
 %\makeindex
 
 \title{Data Warehouse and Business Intelligence}
-\subtitle{Tugas Kelompok: Data Build Tool (DBT)}
-
-\professor{Khabib Mustofa}
+\subtitle{Tugas Kelompok II: dbt \textendash{} Data Mart Inventory}
+\author{Vytis Rabbani Rex\\Muhammad Raihan Sinergie Proton\\Alfat Raehan}
+\professor{Dr.techn. Khabib Mustofa, S.Si., M.Kom.}
+\date{Magister Ilmu Komputer \textendash{} Universitas Gadjah Mada\\November 2026}
 
 \begin{document}
 \maketitle
@@ -83,6 +141,10 @@
 \renewcommand{\baselinestretch}{0.6}\normalsize
 \tableofcontents
 \renewcommand{\baselinestretch}{1.0}\normalsize
+\listoffigures
+\listoftables
+\lstlistoflistings
+\include{contents/Pendahuluan}
 \mainmatter
 \normalsize
 \part{DBT Sebagai Tools Bantu Untuk Data Warehouse}
@@ -93,5 +155,7 @@
 \include{contents/Bab3}
 
 \backmatter
+\include{contents/Lampiran}
+\bibliographystyle{plainnat}
+\bibliography{references}
 \end{document}
-
