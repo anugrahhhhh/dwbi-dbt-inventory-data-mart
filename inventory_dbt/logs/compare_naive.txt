@@ -1,0 +1,25 @@
+ETL manual (NAIVE) -> inventory_tugas1_naive.duckdb  (0.54 detik)
+  [FAIL] dim_product: product_id unik
+  [FAIL] dim_warehouse: warehouse_id unik
+  [PASS] dim_date: 731 hari
+  [FAIL] fakta: jumlah baris = sumber
+  [PASS] fakta: tidak ada FK NULL
+  [FAIL] transfer seimbang
+  [PASS] stok tidak negatif
+Pengecekan kualitas: 4 gagal
+objek                              baris_tugas1  baris_dbt  status
+dim_product                                  50         10  BERBEDA
+dim_warehouse                                15          3  BERBEDA
+dim_movement_type                             6          6  IDENTIK
+fact_inventory                          250,000     10,000  BERBEDA
+fact_inventory_daily_snapshot           548,250     21,930  BERBEDA
+bq1_aging_by_warehouse                        6          3  BERBEDA
+bq2_activity_distribution                     6          6  BERBEDA
+bq3_activity_heatmap                          6          3  BERBEDA
+bq4_activity_by_warehouse                    36         18  BERBEDA
+bq5_aging_by_category_warehouse              48         24  BERBEDA
+bq6_lost_damaged                             48         24  BERBEDA
+bq7_total_activity                            6          6  BERBEDA
+bq8_units_sold_by_category                    8          8  BERBEDA
+bq9_transfers_per_month                      24         24  BERBEDA
+KESIMPULAN: ada hasil yang berbeda
