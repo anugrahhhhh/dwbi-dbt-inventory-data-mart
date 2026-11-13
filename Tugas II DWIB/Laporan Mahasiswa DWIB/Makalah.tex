@@ -22,6 +22,10 @@
 \titlespacing{\subsubsection}{0pt}{\parskip}{-.5\parskip}
 %% INSERT YOUR PACKAGES HERE
 \usepackage[accsupp]{axessibility}  % improves PDF readability for those with disabilities.
+% axessibility mematikan kompresi PDF (\pdfcompresslevel=0) sehingga PDF membengkak menjadi ~100 MB;
+% kompresi diaktifkan kembali agar berkas layak dikumpulkan.
+\pdfcompresslevel=9\relax
+\pdfobjcompresslevel=2\relax
 \usepackage[hidelinks]{hyperref}
 \usepackage{xurl}
 \usepackage{listings}
