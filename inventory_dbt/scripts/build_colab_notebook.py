@@ -15,10 +15,10 @@ Notebook ini menjalankan proyek `inventory_dbt` sepenuhnya di peramban (tanpa in
 Jalankan sel **berurutan dari atas** dengan menekan `Shift+Enter`.
 
 * Tanda `!` di awal baris = perintah terminal. Tanda `%cd` = pindah folder.
-* Yang perlu disiapkan: akun Google, akun Neon (gratis), dan berkas `inventory_dbt.zip`."""),
+* Yang perlu disiapkan: akun Google, akun Neon (gratis), dan berkas `DWBI_Kelompok_Inventory.zip`."""),
     ("md", """## Langkah 1 — Hubungkan Google Drive
 Berkas di Colab hilang ketika *runtime* direset, maka proyek disimpan di Google Drive.
-Unggah `inventory_dbt.zip` ke folder **My Drive** terlebih dahulu. Jendela izin akun Google akan muncul."""),
+Unggah `DWBI_Kelompok_Inventory.zip` ke folder **My Drive** terlebih dahulu. Jendela izin akun Google akan muncul."""),
     ("code", """from google.colab import drive
 drive.mount('/content/drive')
 %cd /content/drive/MyDrive"""),
@@ -29,8 +29,8 @@ pip dapat memasang versi *release candidate* (mis. `1.13.0-rc1`) yang belum stab
 !dbt --version"""),
     ("md", """**Cek keberhasilan:** keluaran memuat `installed: 1.11.x` dan baris `postgres: 1.11.x` di bagian *Plugins*."""),
     ("md", """## Langkah 3 — Ekstrak proyek"""),
-    ("code", """!unzip -q -o inventory_dbt.zip
-%cd /content/drive/MyDrive/inventory_dbt
+    ("code", """!unzip -q -o DWBI_Kelompok_Inventory.zip
+%cd /content/drive/MyDrive/DWBI_Kelompok_Inventory/inventory_dbt
 !ls"""),
     ("md", """**Cek keberhasilan:** daftar berkas memuat `dbt_project.yml` dan `profiles.yml`."""),
     ("md", """## Langkah 4 — Simpan kredensial Neon dengan aman

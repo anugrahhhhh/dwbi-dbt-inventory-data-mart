@@ -88,7 +88,7 @@ Di Colab, klik ikon kunci (\textsf{Secrets}) di panel kiri, tambahkan \kode{NEON
 Ringkasan isi sel ditunjukkan pada Kode~\ref{lst:colab}. Tanda \kode{!} berarti perintah terminal, \kode{\%cd} berarti pindah folder.
 
 \begin{lstlisting}[style=py, caption={Isi utama notebook Colab (diringkas dari \kode{inventory\_dbt\_colab.ipynb}).}, label={lst:colab}]
-# Sel 1: hubungkan Google Drive (unggah inventory_dbt.zip ke My Drive terlebih dahulu)
+# Sel 1: hubungkan Google Drive (unggah DWBI_Kelompok_Inventory.zip ke My Drive terlebih dahulu)
 from google.colab import drive
 drive.mount('/content/drive')
 %cd /content/drive/MyDrive
@@ -98,8 +98,8 @@ drive.mount('/content/drive')
 !dbt --version
 
 # Sel 3: ekstrak proyek dan masuk ke foldernya
-!unzip -q -o inventory_dbt.zip
-%cd /content/drive/MyDrive/inventory_dbt
+!unzip -q -o DWBI_Kelompok_Inventory.zip
+%cd /content/drive/MyDrive/DWBI_Kelompok_Inventory/inventory_dbt
 
 # Sel 4: baca kredensial dari Colab Secrets menjadi environment variable
 import os
