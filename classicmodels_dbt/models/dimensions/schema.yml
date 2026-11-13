@@ -1,0 +1,19 @@
+version: 2
+models:
+  - name: dim_date
+    columns:
+      - {name: date_id, data_tests: [unique, not_null]}
+  - name: dim_customer
+    columns:
+      - {name: customer_key, data_tests: [unique, not_null]}
+      - {name: customer_id, data_tests: [unique, not_null]}
+  - name: dim_product
+    columns:
+      - {name: product_key, data_tests: [unique, not_null]}
+      - {name: product_code, data_tests: [unique, not_null]}
+  - name: dim_employee
+    columns:
+      - {name: employee_key, data_tests: [unique, not_null]}
+  - name: dim_office
+    columns:
+      - {name: office_key, data_tests: [unique, not_null]}

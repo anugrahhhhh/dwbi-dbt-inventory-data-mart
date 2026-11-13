@@ -1,0 +1,34 @@
+11:29:10  Running with dbt=1.11.17
+11:29:10  dbt version: 1.11.17
+11:29:10  python version: 3.10.6
+11:29:10  python path: C:\Users\ASUS\Downloads\alfat dtwh\.venv\Scripts\python.exe
+11:29:10  os info: Windows-10-10.0.26300-SP0
+11:29:10  Using profiles dir at .
+11:29:10  Using profiles.yml file at .\profiles.yml
+11:29:10  Using dbt_project.yml file at C:\Users\ASUS\Downloads\alfat dtwh\classicmodels_dbt\dbt_project.yml
+11:29:10  adapter type: duckdb
+11:29:10  adapter version: 1.11.1
+11:29:10  Configuration:
+11:29:10    profiles.yml file [OK found and valid]
+11:29:10    dbt_project.yml file [OK found and valid]
+11:29:10  Required dependencies:
+11:29:10   - git [OK found]
+
+11:29:10  Connection:
+11:29:10    database: classicmodels
+11:29:10    schema: main
+11:29:10    path: classicmodels.duckdb
+11:29:10    config_options: None
+11:29:10    extensions: None
+11:29:10    settings: {}
+11:29:10    external_root: .
+11:29:10    use_credential_provider: None
+11:29:10    attach: None
+11:29:10    filesystems: None
+11:29:10    remote: None
+11:29:10    plugins: None
+11:29:10    disable_transactions: False
+11:29:10  Registered adapter: duckdb=1.11.1
+11:29:10    Connection test: [OK connection ok]
+
+11:29:10  All checks passed!

@@ -1,0 +1,33 @@
+version: 2
+models:
+  - name: fct_order_lines
+    columns:
+      - name: order_date_id
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_date'), field: date_id}}
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_customer'), field: customer_key}}
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_product'), field: product_key}}
+      - name: sales_rep_key
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_employee'), field: employee_key}}
+      - name: office_key
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_office'), field: office_key}}
+  - name: fct_payments
+    columns:
+      - name: check_number
+        data_tests: [unique, not_null]
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('dim_customer'), field: customer_key}}
+      - name: payment_date_id
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_date'), field: date_id}}
