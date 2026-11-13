@@ -1,0 +1,18 @@
+Folder keluaran : C:\Users\ASUS\Downloads\alfat dtwh\inventory_dbt\data
+  source_products                  50 baris
+  source_warehouses                15 baris
+  source_inventory_movements   10,000 baris
+Produk unik     : 10
+Gudang unik     : 3
+Transfer unik   : 1655
+Distribusi movement_type:
+  DAMAGED     1,691
+  FOUND          33
+  LOST        1,691
+  PURCHASE    1,673
+  SALE        1,602
+  TRANSFER    3,310
+Basis data: C:\Users\ASUS\Downloads\alfat dtwh\inventory_dbt\inventory.duckdb
+  source_products                  50 baris dimuat
+  source_warehouses                15 baris dimuat
+  source_inventory_movements   10,000 baris dimuat
