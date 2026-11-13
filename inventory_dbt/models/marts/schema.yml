@@ -36,3 +36,58 @@ models:
         data_tests: [unique, not_null]
       - name: full_date
         data_tests: [unique, not_null]
+
+  - name: fact_inventory
+    description: "Transaction fact. Grain: 1 baris = 1 pergerakan stok."
+    columns:
+      - name: transaction_id
+        description: "Degenerate dimension."
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_product'), field: product_key}
+      - name: warehouse_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_warehouse'), field: warehouse_key}
+      - name: movement_type_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_movement_type'), field: movement_type_key}
+      - name: quantity
+        description: "Jumlah unit (selalu positif). Additive."
+        data_tests: [not_null]
+      - name: signed_quantity
+        description: "+quantity bila stok bertambah, -quantity bila berkurang. Additive."
+        data_tests: [not_null]
+
+  - name: fact_inventory_daily_snapshot
+    description: "Periodic snapshot fact. Grain: 1 baris = 1 produk x 1 gudang x 1 hari."
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_product'), field: product_key}
+      - name: warehouse_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_warehouse'), field: warehouse_key}
+      - name: stock_on_hand
+        description: "Stok akhir hari. SEMI-ADDITIVE: boleh dijumlah lintas produk/gudang, tidak lintas tanggal."
+        data_tests: [not_null]

@@ -1,0 +1,12 @@
+Kerusakan yang disuntikkan:
+  - Hapus sisi IN dari satu transfer (TRF00001)  (target: assert_transfer_balanced)
+  - Ubah satu SALE menjadi 1.000.000 unit  (target: assert_stock_non_negative)
+
+Hasil dbt run + dbt test pada data rusak:
+  test                             diharapkan  hasil
+  assert_transfer_balanced         FAIL        FAIL
+  assert_stock_non_negative        FAIL        FAIL
+  (test lain yang ikut gagal: -)
+  Done. PASS=48 WARN=0 ERROR=2 SKIP=0 NO-OP=0 TOTAL=50
+
+KESIMPULAN: SEMUA TEST MENDETEKSI KERUSAKAN

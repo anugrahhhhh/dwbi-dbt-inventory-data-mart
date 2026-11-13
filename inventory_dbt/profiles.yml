@@ -4,7 +4,7 @@ inventory_dbt:
   outputs:
     dev:                        # Opsi B: komputer lokal, DuckDB (tanpa server)
       type: duckdb
-      path: inventory.duckdb    # berkas basis data, relatif terhadap folder proyek
+      path: "{{ env_var('INVENTORY_DB', 'inventory.duckdb') }}"  # berkas basis data (bawaan: inventory.duckdb)
       threads: 4
     postgres:                   # Opsi A: Google Colab + Neon PostgreSQL
       type: postgres
