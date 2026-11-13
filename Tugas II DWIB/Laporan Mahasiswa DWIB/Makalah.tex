@@ -29,6 +29,7 @@
 \usepackage{tabularx}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{makecell}
 \usepackage{float}
 \usepackage{pifont}
 \usepackage{tikz}
@@ -116,7 +117,13 @@
 \renewcommand{\lstlistingname}{Kode}
 \renewcommand{\lstlistlistingname}{Daftar Kode}
 
-\newcommand{\kode}[1]{\texttt{#1}}          % kode pendek dalam kalimat
+% kode pendek dalam kalimat; boleh dipatah setelah "_" dan "/" agar nama panjang tidak melewati margin
+\newcommand{\kodeus}{\textunderscore\allowbreak}
+\DeclareRobustCommand{\kode}[1]{{\ttfamily\let\_\kodeus#1}}
+\setlength{\emergencystretch}{3em}
+\usepackage{adjustbox}
+% tabel yang dibangkitkan make_tables.py dari results/*.csv; diperkecil otomatis bila lebih lebar dari kolom
+\newcommand{\tabelotomatis}[1]{\adjustbox{max width=\linewidth}{\input{kode/tabel/#1.tex}}}
 \newcommand{\istilah}[1]{\textit{#1}}      % istilah asing
 \newcommand{\cmd}[1]{\colorbox{black!8}{\texttt{#1}}}
 \newcommand{\langkah}[1]{\par\medskip\noindent\textbf{\color{blue!60!black}#1}\enspace}  % judul langkah sebaris

@@ -47,6 +47,8 @@ def main() -> None:
             shutil.copy2(f, HERE / "figures" / f"{prefix}{f.name}")
             n += 1
     print(f"{n} berkas disalin ke {dest.name}/ dan figures/")
+    import make_tables
+    make_tables.main()
 
 
 if __name__ == "__main__":
