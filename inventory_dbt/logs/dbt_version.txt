@@ -1,0 +1,13 @@
+Core:
+  - installed: 1.11.17
+  - latest:    1.12.7  - Update available!
+
+  Your version of dbt-core is out of date!
+  You can find instructions for upgrading here:
+  https://docs.getdbt.com/docs/installation
+
+Plugins:
+  - duckdb:   1.11.1 - Up to date!
+  - postgres: 1.11.0 - Up to date!
+
+
