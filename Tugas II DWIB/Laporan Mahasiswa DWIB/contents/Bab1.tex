@@ -1,18 +1,318 @@
-\chapter{ DBT (Data Build Tool): The Modern Way to Transform Data}
+\chapter{DBT (Data Build Tool): The Modern Way to Transform Data}\label{chap:konsep}
 \begin{mybox}{Anggota kelompok}
 \begin{enumerate}
     \itemsep0em
-    \item Mahasiswa 1 (NIM xxx)
-    \item Mahasiswa 2 (NIM yyy)
+    \item Vytis Rabbani Rex (NIM 26/590730/PPA/07412) \textendash{} \textit{Data Modeler}
+    \item Muhammad Raihan Sinergie Proton (NIM 26/591068/PPA/07429) \textendash{} \textit{dbt \& Pipeline Engineer}
+    \item Alfat Raehan (NIM 26/590022/PPA/0738) \textendash{} \textit{Documentation \& QA Lead}
 \end{enumerate}
 \end{mybox}
 
-\section{Pengenalan DBT}
+Bab ini menjelaskan konsep yang dibutuhkan sebelum praktik: apa itu dbt, bagaimana model dbt dipakai untuk mewujudkan rancangan dimensional Kimball (dengan contoh elaborasi laboratorium ClassicModels), dan bagaimana dbt menjaga kualitas data. Pembaca yang ingin langsung mencoba dapat melompat ke Bab~2 dan kembali ke bab ini belakangan.
+
+\section{Pengenalan DBT}\label{sec:pengenalan}
+\istilah{Data Build Tool} (dbt)\index{dbt} adalah kerangka kerja sumber terbuka berbasis SQL dan templat Jinja untuk tahap \textbf{Transform} pada arsitektur data modern \istilah{ELT} (\istilah{Extract, Load, Transform}) \citep{handy2017,dbtdocs}. Pada ETL konvensional, data diolah di server perantara sebelum dimuat ke gudang data. Pada ELT, data mentah dimuat lebih dahulu ke dalam gudang data, lalu ditransformasi \emph{di dalam} gudang data tersebut memakai SQL \citep{reis2022}. dbt mengisi peran ``T'' itu: ia mengubah tabel mentah yang sudah berada di basis data menjadi tabel dimensi dan fakta yang siap dipakai aplikasi \istilah{Business Intelligence} (BI).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, thick, minimum height=1.1cm, text width=2.6cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=2.5mm]}, thick}]
+\node[box, fill=green!12] (src) {Sistem sumber\\(OLTP, CSV)};
+\node[box, fill=yellow!20, right=1.6cm of src] (raw) {Gudang data\\tabel mentah\\(\kode{source\_*})};
+\node[box, fill=blue!10, right=1.6cm of raw] (mart) {Data mart\\(\istilah{star schema})};
+\node[box, fill=red!8, right=1.0cm of mart, text width=1.8cm] (bi) {Dasbor /\\BI};
+\draw[arr] (src) -- node[above, font=\scriptsize]{Extract} node[below, font=\scriptsize]{\& Load} (raw);
+\draw[arr, very thick, blue!70!black] (raw) -- node[above, font=\scriptsize\bfseries]{dbt} node[below, font=\scriptsize]{Transform} (mart);
+\draw[arr] (mart) -- (bi);
+\node[below=0.15cm of src, font=\scriptsize, text width=3cm, align=center] {\kode{generate\_source\_data.py}\\\kode{load\_source.py}};
+\end{tikzpicture}
+\caption{Posisi dbt dalam arsitektur ELT pada studi kasus kelompok.}\label{fig:elt}
+\end{figure}
+
+\begin{perhatian}[dbt tidak memindahkan data]
+dbt tidak melakukan \istilah{extract} maupun \istilah{load}. Tahap tersebut dikerjakan alat lain (skrip Python, Airbyte, Fivetran, dsb.). Pada studi kasus ini \kode{generate\_source\_data.py} dan \kode{load\_source.py} memuat tiga tabel \kode{source\_*}, lalu seluruh transformasi menuju \istilah{star schema} dikerjakan dbt.
+\end{perhatian}
+
+Contoh paling sederhana dari ``transformasi'' adalah mengubah log pergerakan stok menjadi ringkasan stok per produk dan gudang (Tabel~\ref{tab:contohtransform}): seluruh logika cukup ditulis sebagai satu pernyataan \kode{SELECT ... GROUP BY}.
+
+\begin{table}[H]
+\centering\small
+\caption{Contoh transformasi: dari log pergerakan (kiri) menjadi ringkasan stok (kanan).}\label{tab:contohtransform}
+\begin{tabular}{llllr}
+\toprule
+\textbf{ID} & \textbf{Produk} & \textbf{Gudang} & \textbf{Jenis} & \textbf{Qty} \\
+\midrule
+1 & Keyboard & Jawa & PURCHASE & 50 \\
+2 & Keyboard & Jawa & SALE & 10 \\
+3 & Keyboard & Jawa & SALE & 5 \\
+4 & Mouse & Sumatra & PURCHASE & 30 \\
+5 & Mouse & Sumatra & SALE & 8 \\
+\bottomrule
+\end{tabular}
+\quad$\Rightarrow$\quad
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Produk} & \textbf{Gudang} & \textbf{Beli} & \textbf{Jual} & \textbf{Stok} \\
+\midrule
+Keyboard & Jawa & 50 & 15 & 35 \\
+Mouse & Sumatra & 30 & 8 & 22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Konsep dan Arsitektur DBT}
+Arsitektur dbt bertumpu pada satu gagasan: \textbf{setiap transformasi adalah sebuah pernyataan \kode{SELECT}}. Pengembang cukup menulis \kode{SELECT}; dbt membungkusnya menjadi \kode{CREATE VIEW} atau \kode{CREATE TABLE AS} sesuai materialisasi, lalu mengeksekusinya melalui adapter basis data \citep{dbtdocs}. Konsep-konsep kunci dirangkum pada Tabel~\ref{tab:konsep}.
+
+\begin{table}[H]
+\centering\small
+\caption{Konsep kunci dalam dbt.}\label{tab:konsep}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\toprule
+Konsep & Penjelasan \\
+\midrule
+Model\index{model} & Berkas \kode{.sql} berisi satu \kode{SELECT}. Satu berkas = satu model = satu \istilah{view}/tabel di basis data. \\
+\kode{source()} & Rujukan ke tabel mentah yang tidak dikelola dbt, dideklarasikan di \kode{sources.yml}, mis. \kode{\{\{ source('inventory\_oltp', 'source\_products') \}\}}. \\
+\kode{ref()}\index{ref()} & Rujukan ke model lain, mis. \kode{\{\{ ref('stg\_products') \}\}}. dbt menerjemahkannya menjadi nama tabel yang benar sekaligus mencatat ketergantungan. \\
+Materialisasi & Cara model disimpan: \istilah{view}, \istilah{table}, \istilah{incremental}, \istilah{ephemeral} (Subbab~\ref{sec:materialisasi}). \\
+DAG & \istilah{Directed Acyclic Graph} yang dibangun otomatis dari semua \kode{ref()}/\kode{source()}; menentukan urutan eksekusi. \\
+Jinja \& macro\index{macro} & Templat yang membuat SQL dinamis dan dapat dipakai ulang, mis. macro \kode{date\_key()} pada proyek kelompok. \\
+Test\index{test} & Asersi kualitas data: generik (YAML) atau \istilah{singular} (berkas SQL), dijalankan dengan \kode{dbt test}. \\
+Seed & Berkas CSV kecil yang dimuat menjadi tabel dengan \kode{dbt seed}. \\
+Adapter & \istilah{Plugin} penghubung dbt dengan basis data tertentu (DuckDB, PostgreSQL, Snowflake, BigQuery, dll.). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Saat perintah seperti \kode{dbt run} dijalankan, dbt bekerja dalam lima tahap:
+\begin{enumerate}[nosep]
+    \item \textbf{Parse}: membaca \kode{dbt\_project.yml}, \kode{profiles.yml}, seluruh model SQL, berkas YAML, dan macro.
+    \item \textbf{Compile}: merender templat Jinja menjadi SQL murni (hasilnya dapat dilihat di \kode{target/compiled/}).
+    \item \textbf{Bangun DAG}: menghitung ketergantungan antarmodel dari \kode{ref()} dan \kode{source()}.
+    \item \textbf{Execute}: membungkus SQL sesuai materialisasi dan mengirimkannya ke basis data. Model yang tidak saling bergantung dijalankan paralel sesuai jumlah \istilah{threads}.
+    \item \textbf{Artefak}: menyimpan \kode{manifest.json}, \kode{run\_results.json}, dan \kode{catalog.json} yang dipakai untuk dokumentasi dan \istilah{lineage}.
+\end{enumerate}
+
+Proyek kelompok menyusun model dalam lapisan (Subbab~\ref{sec:struktur}): \textbf{staging} (\istilah{raw} $\rightarrow$ bersih: \istilah{rename}, \istilah{cast}, \istilah{clean}), lalu \textbf{marts} berupa dimensi dan fakta (bersih $\rightarrow$ \istilah{star schema}: \istilah{join}, hitung, agregasi).
+
 \subsection{Fitur dan Dukungan DBT}
+Fitur utama dbt \citep{dbtdocs,shamimw}:
+\begin{itemize}[nosep]
+    \item \textbf{Pemodelan berbasis SQL}: transformasi dipecah menjadi model-model kecil yang saling merujuk lewat \kode{ref()}.
+    \item \textbf{Manajemen dependensi otomatis}: urutan eksekusi diturunkan dari DAG, tidak ditulis manual.
+    \item \textbf{Pengujian data}: test generik \kode{unique}, \kode{not\_null}, \kode{accepted\_values}, \kode{relationships}, ditambah \istilah{singular test} berupa SQL bebas.
+    \item \textbf{Dokumentasi \& lineage otomatis}: \kode{dbt docs generate} menghasilkan situs kamus data dan grafik \istilah{lineage}.
+    \item \textbf{Version control}: seluruh proyek berupa berkas teks yang dapat dikelola dengan Git dan diuji di CI/CD.
+    \item \textbf{Incremental model}: hanya memproses data baru/berubah pada tabel besar.
+    \item \textbf{Snapshot}: merekam perubahan data dari waktu ke waktu (SCD Type~2).
+    \item \textbf{Ekosistem adapter}: satu proyek dapat dijalankan di basis data berbeda; proyek kelompok berjalan di DuckDB dan PostgreSQL \citep{dbtduckdb,dbtpostgres}.
+\end{itemize}
 
-\section{Model dalam DBT dan Pemanfaatannya}
-\subsection{Classic Model}
-\subsection{Struktur Model dalam DBT}
+\begin{table}[H]
+\centering\small
+\caption{ETL tradisional dibandingkan ELT dengan dbt.}\label{tab:etlelt}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X X}
+\toprule
+Aspek & ETL tradisional & ELT dengan dbt \\
+\midrule
+Lokasi transformasi & Sebelum data masuk gudang data & Di dalam gudang data \\
+Bentuk transformasi & Alat ETL dan alur kerja yang dikonfigurasi & Model SQL (\kode{SELECT}) \\
+Pengelolaan & Bergantung pada alat dan konfigurasinya & Model modular yang saling terhubung \\
+Dependensi & Diatur \istilah{workflow}/penjadwal ETL & DAG dari \kode{ref()} \\
+Pengujian data & Bergantung fitur alat ETL & Test bawaan (\kode{unique}, \kode{not\_null}, \dots) \\
+Dokumentasi & Perlu alat terpisah & Dihasilkan otomatis \\
+Version control & Bergantung alat & Berkas teks, terintegrasi Git \\
+Pemrosesan bertahap & Bergantung kemampuan alat & \istilah{Incremental model} \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\section{Data Quality dalam DBT}
+\langkah{Keuntungan dan batasan.} Bagi tim data, keuntungan dbt dapat diringkas dalam empat hal \citep{handy2017,hirazone}: (1) \textbf{cukup SQL}: analis yang menguasai SQL dapat membangun \istilah{pipeline} tanpa menulis kode untuk DDL dan urutan eksekusi; (2) \textbf{andal dan dapat diulang}: karena setiap model hanya \kode{SELECT}, menjalankan ulang \kode{dbt run} menghasilkan tabel yang sama dari data yang sama (\istilah{idempoten}); (3) \textbf{teruji dan terdokumentasi}: test dan deskripsi ditulis berdampingan dengan kode; (4) \textbf{praktik rekayasa perangkat lunak}: \istilah{code review}, Git, dan CI. Batasannya: dbt tidak memindahkan data, dbt Core tidak menjadwalkan dirinya sendiri (perlu cron/Airflow), dan kemampuannya mengikuti basis data target. Pada studi kasus kelompok, dbt juga tidak lebih cepat daripada skrip manual untuk data kecil (Subbab~\ref{sec:tugas1}).
+
+\section{Model dalam DBT dan Pemanfaatannya}\label{sec:model}
+
+\subsection*{Materialisasi}\label{sec:materialisasi}
+\addcontentsline{toc}{subsection}{Materialisasi}
+Materialisasi\index{materialisasi} menentukan bagaimana hasil \kode{SELECT} sebuah model disimpan \citep{dbtmaterial}:
+
+\begin{table}[H]
+\centering\small
+\caption{Perbandingan empat jenis materialisasi dbt.}\label{tab:materialisasi}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X X X X}
+\toprule
+Aspek & View & Table & Incremental & Ephemeral \\
+\midrule
+Objek di basis data & \istilah{View} & Tabel & Tabel & Tidak ada \\
+Kapan diproses & Saat dibaca & Saat \kode{dbt run} & Hanya data baru/berubah & Disisipkan sebagai CTE ke model pemakai \\
+Penyimpanan & Sangat kecil & Sebesar hasil & Sebesar hasil & Tidak ada \\
+Cocok untuk & \istilah{Staging}, transformasi ringan & Dimensi dan fakta yang sering dibaca & Tabel log besar yang terus bertambah & Langkah perantara \\
+Dipakai kelompok & \istilah{Staging} & Dimensi \& fakta & \textendash{} & \textendash{} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{Dasar \istilah{Dimensional Modelling} (Kimball)}
+\addcontentsline{toc}{subsection}{Dasar Dimensional Modelling (Kimball)}
+\istilah{Dimensional modelling}\index{Kimball} menyusun data analitik menjadi dua jenis tabel \citep{kimball2013,kimballtech}: \textbf{tabel fakta}, yang mencatat ukuran numerik suatu peristiwa bisnis (berapa, berapa banyak), dan \textbf{tabel dimensi}, yang memberi konteks peristiwa tersebut (siapa, apa, di mana, kapan). Satu tabel fakta yang dikelilingi dimensi-dimensinya disebut \istilah{star schema}. Setiap \istilah{star schema} dirancang dengan empat langkah berurutan:
+\begin{enumerate}[nosep]
+    \item \textbf{Pilih proses bisnis}, misalnya pergerakan stok atau pembayaran pelanggan.
+    \item \textbf{Tetapkan grain}\index{grain}, yaitu arti satu baris tabel fakta (mis. ``satu baris = satu pergerakan stok''), sebelum memilih kolom apa pun.
+    \item \textbf{Identifikasi dimensi} yang konsisten dengan grain tersebut.
+    \item \textbf{Identifikasi fakta}, yaitu ukuran numerik yang berlaku pada grain tersebut.
+\end{enumerate}
+
+\begin{table}[H]
+\centering\small
+\caption{Teknik Kimball yang dipakai dan contohnya dalam modul.}\label{tab:teknik}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X l}
+\toprule
+Teknik & Arti singkat & Contoh di modul \\
+\midrule
+\istilah{Transaction fact} & Satu baris per peristiwa pada tingkat paling rinci & \kode{fact\_inventory}, \kode{fct\_order\_lines} \\
+\istilah{Periodic snapshot} & Satu baris per entitas per periode & \makecell[l]{\kode{fact\_inventory\_daily\_snapshot},\\\kode{fct\_sales\_performance}} \\
+\istilah{Fact-on-fact} & Fakta dibentuk dari fakta lain & kedua snapshot di atas \\
+\istilah{Additive} & Boleh dijumlah di semua dimensi & \kode{quantity}, \kode{revenue} \\
+\istilah{Semi-additive} & Tidak boleh dijumlah lintas waktu & \kode{stock\_on\_hand} \\
+\istilah{Non-additive} & Tidak boleh dijumlah sama sekali & \kode{unique\_customers}, \kode{aging\_days} \\
+\istilah{Surrogate key} & Kunci bilangan buatan gudang data & \kode{product\_key}, \kode{customer\_key} \\
+\istilah{Degenerate dimension} & Atribut dimensi tanpa tabel sendiri & \kode{transaction\_id}, \kode{check\_number} \\
+\istilah{Conformed dimension} & Dimensi yang dipakai bersama beberapa fakta & \kode{dim\_date}, \kode{dim\_product}, \kode{dim\_warehouse} \\
+SCD Type 1 & Nilai lama ditimpa, tanpa histori & \kode{dim\_product}, \kode{dim\_warehouse} \\
+\istilah{Bus matrix} & Matriks proses bisnis $\times$ dimensi & Tabel~\ref{tab:bus} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Classic Model}\label{sec:classicmodel}
+Sebagai elaborasi, kelompok mengerjakan lembar kegiatan laboratorium \textit{ClassicModels: From OLTP to Data Marts} \citep{activitylab} memakai basis data contoh ClassicModels \citep{mysqltutorial}, yaitu basis data OLTP sebuah perusahaan ritel miniatur mobil dengan delapan tabel (\kode{customers}, \kode{employees}, \kode{offices}, \kode{orderdetails}, \kode{orders}, \kode{payments}, \kode{productlines}, \kode{products}). Seluruh langkah dijalankan dengan \kode{dbt-duckdb} di folder \kode{classicmodels\_dbt} pada lampiran.
+
+\begin{table}[H]
+\centering\small
+\caption{Langkah elaborasi ClassicModels dan hasilnya.}\label{tab:cmlangkah}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+\textbf{Langkah lembar kegiatan} & \textbf{Perintah} & \textbf{Hasil} \\
+\midrule
+Setup 2: muat data & \kode{python load\_source.py} & \kode{Done. Executed: 23 statements, Errors: 0} \\
+Setup 3: cek koneksi & \kode{dbt debug --profiles-dir .} & \kode{All checks passed!} \\
+Setup 4: eksplorasi & \kode{python explore\_source.py} & \kode{[OK] All 8 expected tables found.} \\
+Step 2--4: bangun model & \kode{dbt build --profiles-dir .} & 16 model + 28 test, \kode{PASS=44} \\
+Step 5: business query & \kode{python run\_activity\_queries.py} & 4 tabel hasil di \kode{results/} \\
+Step 6: DAG & \kode{dbt docs generate} & Gambar~\ref{fig:cmlineage} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\langkah{Memuat data.} Data asli diunduh dari MySQL Tutorial berupa \istilah{dump} MySQL. \istilah{Dump} tersebut tidak dapat langsung dijalankan di DuckDB, sehingga \kode{load\_source.py} kelompok mengonversi sintaksnya: membuang baris \kode{FOREIGN KEY}, mengganti tipe \kode{mediumtext}/\kode{mediumblob}/\kode{smallint(6)}, dan mengubah \istilah{escape} \kode{\textbackslash'} menjadi \kode{''}. Percobaan pertama gagal pada tabel \kode{employees} dan \kode{orderdetails} karena keduanya memiliki \emph{dua} baris \kode{FOREIGN KEY}, sedangkan aturan konversi awal hanya membuang satu.
+
+\langkah{Rancangan data mart.} Dengan empat langkah Kimball, ClassicModels ditransformasi menjadi tiga data mart (Tabel~\ref{tab:cmmart}).
+
+\begin{table}[H]
+\centering\small
+\caption{Rancangan data mart ClassicModels hasil elaborasi.}\label{tab:cmmart}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+\textbf{Tabel fakta} & \textbf{Grain} & \textbf{Dimensi \& ukuran} \\
+\midrule
+\kode{fct\_order\_lines} & 1 baris per item pesanan & tanggal, pelanggan, produk, sales rep, kantor; \kode{quantity\_ordered}, \kode{revenue}, \kode{cost}, \kode{gross\_profit} \\
+\kode{fct\_payments} & 1 baris per cek pembayaran & tanggal, pelanggan; \kode{amount} (\kode{check\_number} sebagai \istilah{degenerate dimension}) \\
+\kode{fct\_sales\_performance} & 1 baris per sales rep per bulan & sales rep, kantor, bulan; jumlah pesanan, pelanggan unik, unit, revenue, gross profit (\istilah{periodic snapshot}, \istilah{fact-on-fact}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\langkah{Model dbt.} Sesuai lembar kegiatan, proyek terdiri atas 8 model \istilah{staging} (\istilah{view}), 5 dimensi, dan 3 fakta (\istilah{table}). \istilah{Staging} hanya mengganti nama kolom \istilah{camelCase} menjadi \istilah{snake\_case}; fakta \kode{fct\_sales\_performance} dibentuk dari \kode{fct\_order\_lines} dengan \kode{ref()}, sehingga dbt otomatis membangunnya paling akhir:
+\lstinputlisting[style=sql, caption={\kode{classicmodels\_dbt/models/marts/fct\_sales\_performance.sql}.}, label={lst:cmperf}]{kode/classicmodels_dbt/models/marts/fct_sales_performance.sql}
+
+Kelompok menambahkan 28 \istilah{data test} yang tidak ada di lembar kegiatan (\kode{unique}/\kode{not\_null} pada kunci dimensi, \kode{relationships} pada \istilah{foreign key} fakta, dan satu \istilah{singular test} kelengkapan baris \kode{orderdetails}):
+\begin{lstlisting}[style=term, caption={Keluaran \kode{dbt build} ClassicModels (diringkas dari \kode{classicmodels\_dbt/logs/dbt\_build.txt}).}, label={lst:cmbuild}]
+Found 16 models, 28 data tests, 8 sources, 511 macros
+Finished running 8 table models, 28 data tests, 8 view models in 0 hours 0 minutes and 1.35 seconds (1.35s).
+Done. PASS=44 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=44
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/cm_lineage.png}
+\caption{\istilah{Lineage graph} proyek ClassicModels. \kode{dim\_date} tampak berdiri sendiri karena fakta menyimpan tanggal secara langsung (\kode{order\_date\_id}), bukan melalui \kode{ref()}; integritasnya tetap dijaga oleh \istilah{relationships test}.}\label{fig:cmlineage}
+\end{figure}
+
+\langkah{Membaca hasil.} Seluruh \istilah{checkpoint} lembar kegiatan terpenuhi dan diuji otomatis oleh \kode{tests\_py/test\_checkpoints.py}: \kode{dim\_date} mencakup 2003-01-01 s.d. 2006-12-31 (1.461 hari); Classic Cars adalah lini produk dengan \istilah{revenue} tertinggi; total \istilah{revenue} sepanjang waktu USD 9.604.190,61 ($\approx$ 9,6 juta); dan lima sales rep teratas tahun 2004 memuat wilayah EMEA dan APAC (Tabel~\ref{tab:cmproduct} dan~\ref{tab:cmreps}).
+
+\begin{table}[H]
+\centering\small
+\caption{\istilah{Revenue} per lini produk ClassicModels (\kode{results/revenue\_by\_product\_line.csv}).}\label{tab:cmproduct}
+\tabelotomatis{cm_productline}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\caption{Lima sales rep teratas tahun 2004 (\kode{results/top5\_sales\_reps\_2004.csv}).}\label{tab:cmreps}
+\tabelotomatis{cm_reps}
+\end{table}
+
+\begin{perhatian}[Temuan: ukuran \istilah{non-additive}]
+Kueri ``Top sales reps in 2004'' pada lembar kegiatan menjumlahkan \kode{unique\_customers} dari setiap bulan. Kolom ini \istilah{non-additive}: pelanggan yang sama di dua bulan berbeda terhitung dua kali, sehingga kolom terakhir Tabel~\ref{tab:cmreps} adalah batas atas, bukan jumlah pelanggan unik sebenarnya dalam setahun. Angka yang benar harus dihitung ulang dari \kode{fct\_order\_lines} dengan \kode{COUNT(DISTINCT customer\_key)}.
+\end{perhatian}
+
+\subsection{Struktur Model dalam DBT}\label{sec:struktur}
+Proyek kelompok mengikuti praktik \istilah{layered architecture} dari dbt Labs \citep{dbtstructure}: setiap lapisan memiliki satu tanggung jawab (Tabel~\ref{tab:lapisan}).
+
+\begin{table}[H]
+\centering\small
+\caption{Lapisan model pada proyek \kode{inventory\_dbt}.}\label{tab:lapisan}
+\begin{tabularx}{\linewidth}{l l l X}
+\toprule
+\textbf{Lapisan} & \textbf{Prefix} & \textbf{Materialisasi} & \textbf{Tanggung jawab} \\
+\midrule
+Source & \kode{source\_*} & \textendash{} (di luar dbt) & Tabel mentah hasil \istilah{Extract \& Load}. \\
+Staging & \kode{stg\_*} & \istilah{view} & \kode{TRIM}, \kode{NULLIF}, \istilah{cast} tipe; tanpa logika bisnis dan tanpa \istilah{join}. \\
+Marts \textendash{} dimensi & \kode{dim\_*} & \istilah{table} & \istilah{Surrogate key}, deduplikasi SCD Type 1, atribut deskriptif. \\
+Marts \textendash{} fakta & \kode{fact\_*} & \istilah{table} & Menggabungkan \istilah{staging} dengan dimensi; menyimpan ukuran numerik; snapshot dibentuk dari fakta lain. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Materialisasi cukup ditulis sekali per folder pada \kode{dbt\_project.yml}, sehingga model tidak perlu mengulang konfigurasi:
+\lstinputlisting[style=yml, caption={\kode{inventory\_dbt/dbt\_project.yml}.}, label={lst:dbtproject}]{kode/inventory_dbt/dbt_project.yml}
+
+\section{Data Quality dalam DBT}\label{sec:dataquality}
+Kualitas data adalah syarat agar laporan BI dapat dipercaya. dbt menyediakan dua jenis pengujian yang dijalankan dengan \kode{dbt test} \citep{dbttests}:
+\begin{enumerate}[nosep]
+    \item \textbf{Generic test}, dideklarasikan di berkas YAML pada level kolom: \kode{unique}, \kode{not\_null}, \kode{accepted\_values}, dan \kode{relationships} (integritas \istilah{foreign key}). Test juga dapat dipasang pada tabel sumber (\istilah{source test}).
+    \item \textbf{Singular test}, berupa berkas SQL di folder \kode{tests/} yang mengembalikan baris-baris pelanggar aturan. Test dinyatakan PASS bila kueri menghasilkan nol baris.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[box/.style={draw, rounded corners, thick, minimum height=1cm, text width=2.5cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=2.5mm]}, thick}]
+\node[box, fill=green!12] (a) {Data sumber};
+\node[box, fill=yellow!20, right=0.8cm of a] (b) {Model dbt\\(\kode{dbt run})};
+\node[box, fill=blue!10, right=0.8cm of b] (c) {Test\\(\kode{dbt test})};
+\node[box, fill=green!25, above right=0.1cm and 0.8cm of c, text width=2.8cm] (d) {PASS: 0 baris pelanggar $\rightarrow$ data dipakai};
+\node[box, fill=red!20, below right=0.1cm and 0.8cm of c, text width=2.8cm] (e) {FAIL: ada pelanggar $\rightarrow$ perbaiki dulu};
+\draw[arr] (a) -- (b); \draw[arr] (b) -- (c); \draw[arr] (c) -- (d); \draw[arr] (c) -- (e);
+\end{tikzpicture}
+\caption{Alur pengujian kualitas data dalam dbt.}\label{fig:alurtest}
+\end{figure}
+
+Contoh \istilah{generic test} pada fakta proyek kelompok: setiap \istilah{foreign key} diberi \kode{not\_null} \emph{dan} \kode{relationships}, karena \kode{relationships} mengabaikan nilai \kode{NULL}.
+\begin{lstlisting}[style=yml, caption={Potongan \kode{models/marts/schema.yml}.}, label={lst:genericyml}]
+  - name: fact_inventory
+    description: "Transaction fact. Grain: 1 baris = 1 pergerakan stok."
+    columns:
+      - name: transaction_id
+        description: "Degenerate dimension."
+        data_tests: [unique, not_null]
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_product'), field: product_key}
+\end{lstlisting}
+
+Contoh \istilah{singular test} yang menguji aturan bisnis ``stok fisik tidak mungkin negatif'':
+\lstinputlisting[style=sql, caption={\kode{tests/assert\_stock\_non\_negative.sql}.}, label={lst:singular}]{kode/inventory_dbt/tests/assert_stock_non_negative.sql}
+
+Secara keseluruhan proyek \kode{inventory\_dbt} memiliki 50 test (44 generik dan 6 \istilah{singular}) yang seluruhnya lulus; rinciannya dan bukti bahwa test benar-benar mendeteksi data rusak (\istilah{mutation test}) dibahas di Subbab~\ref{sec:hasiltest}.

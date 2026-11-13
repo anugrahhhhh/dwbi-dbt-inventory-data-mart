@@ -26,6 +26,7 @@ DERIVED = {
     14075256: "SUM(stock_on_hand) seluruh tanggal (diverifikasi dengan kueri)",
     21930: "10 produk x 3 gudang x 731 hari",
     9604190.61: "total revenue ClassicModels (checkpoints.csv)",
+    9.6: "9.604.190,61 dibulatkan ke juta (checkpoint activity: 'approximately $9.6 million')",
 }
 
 
