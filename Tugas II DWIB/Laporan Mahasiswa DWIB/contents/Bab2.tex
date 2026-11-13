@@ -2,11 +2,344 @@
 \begin{mybox}{Anggota kelompok}
 \begin{enumerate}
     \itemsep0em
-    \item Mahasiswa 1 (NIM xxx)
-    \item Mahasiswa 2 (NIM yyy)
+    \item Vytis Rabbani Rex (NIM 26/590730/PPA/07412) \textendash{} \textit{Data Modeler}
+    \item Muhammad Raihan Sinergie Proton (NIM 26/591068/PPA/07429) \textendash{} \textit{dbt \& Pipeline Engineer}
+    \item Alfat Raehan (NIM 26/590022/PPA/0738) \textendash{} \textit{Documentation \& QA Lead}
 \end{enumerate}
 \end{mybox}
 
-\section{DBT Core vs DBT Cloud}
-\section{Instalasi \textit{Package}}
-\section{Workflow dan Use Case}
+Bab ini adalah panduan praktik. Setiap langkah ditulis untuk pembaca yang belum pernah memakai dbt maupun terminal, dan disertai kotak \textbf{Cek keberhasilan} berisi keluaran yang seharusnya muncul. Pembaca cukup memilih \emph{salah satu} jalur:
+
+\begin{itemize}[nosep]
+    \item \textbf{Opsi A \textendash{} Google Colab + Neon PostgreSQL} (Subbab~\ref{sec:opsiA}): tanpa instalasi apa pun di komputer; jalur yang dipakai kelompok saat presentasi.
+    \item \textbf{Opsi B \textendash{} Komputer lokal Windows + DuckDB} (Subbab~\ref{sec:opsiB}): tanpa server basis data dan tanpa akun daring; paling mudah untuk belajar.
+\end{itemize}
+
+Kedua jalur memakai \emph{proyek dbt yang sama persis} (\kode{inventory\_dbt}); yang berbeda hanya \istilah{target} koneksi di \kode{profiles.yml}.
+
+\section{DBT Core vs DBT Cloud}\label{sec:corecloud}
+dbt\index{dbt Core}\index{dbt Cloud} tersedia dalam dua bentuk \citep{dbtdocs}. \textbf{dbt Core} adalah perangkat lunak sumber terbuka (lisensi Apache~2.0) berbasis Python yang dijalankan dari baris perintah (CLI). \textbf{dbt Cloud} (kini dipasarkan sebagai \istilah{dbt platform}) adalah layanan terkelola dari dbt Labs yang menjalankan dbt Core di balik antarmuka web. Perbandingannya ditunjukkan pada Tabel~\ref{tab:corecloud}.
+
+\begin{table}[H]
+\centering\small
+\caption{Perbandingan dbt Core dan dbt Cloud.}\label{tab:corecloud}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X X}
+\toprule
+Aspek & dbt Core & dbt Cloud \\
+\midrule
+Biaya & Gratis, sumber terbuka & Berlangganan (ada paket developer gratis terbatas) \\
+Lingkungan & Komputer lokal / Colab / server sendiri & Platform web dbt Labs \\
+Instalasi & \kode{pip install dbt-core} + adapter & Tidak perlu instalasi \\
+Antarmuka & Terminal (CLI) + editor teks & IDE di peramban + CLI \\
+Penjadwalan & Perlu alat lain (cron, Airflow, Dagster) & Penjadwal (\istilah{job scheduler}) bawaan \\
+Dokumentasi & \kode{dbt docs generate/serve} di lokal & Dokumentasi dan \istilah{lineage} ter-\istilah{hosting} \\
+Basis data & Semua adapter, termasuk DuckDB & Terutama \istilah{cloud warehouse} (Snowflake, BigQuery, Postgres, dll.) \\
+Cocok untuk & Belajar, proyek kecil, tim yang mengelola sendiri & Tim/perusahaan yang ingin layanan terkelola \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{info}[Pilihan kelompok]
+Kelompok memakai \textbf{dbt Core}. Alasannya: (1) gratis dan dapat dijalankan di Google Colab maupun laptop; (2) mendukung DuckDB, yaitu basis data berkas yang tidak memerlukan server, dan PostgreSQL (Neon) yang dipakai pada presentasi; (3) seluruh langkahnya transparan sehingga cocok untuk modul pembelajaran. Adapter yang dipakai: \kode{dbt-postgres} untuk Opsi~A dan \kode{dbt-duckdb} untuk Opsi~B \citep{dbtpostgres,dbtduckdb}.
+\end{info}
+
+\section{Instalasi \textit{Package}}\label{sec:instalasi}
+
+\subsection{Istilah yang Perlu Diketahui}
+\begin{table}[H]
+\centering\small
+\caption{Istilah dasar dalam panduan instalasi.}\label{tab:istilah}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\toprule
+Istilah & Penjelasan \\
+\midrule
+Terminal & Jendela untuk mengetik perintah teks. Di Windows dipakai \textbf{PowerShell}. Perintah diketik lalu dijalankan dengan tombol \textsf{Enter}. \\
+pip & Program bawaan Python untuk mengunduh dan memasang pustaka (\istilah{package}), termasuk dbt. \\
+\istilah{Virtual environment} (venv) & Folder berisi Python tersendiri untuk satu proyek, sehingga versi dbt tidak bercampur dengan proyek lain. Venv harus \emph{diaktifkan} setiap kali membuka terminal baru. \\
+Adapter & \istilah{Plugin} yang membuat dbt dapat berbicara dengan basis data tertentu (\kode{dbt-duckdb}, \kode{dbt-postgres}). \\
+\kode{profiles.yml} & Berkas pengaturan koneksi: jenis basis data, lokasi/alamat, dan jumlah \istilah{thread}. \\
+\kode{dbt\_project.yml} & Berkas pengaturan proyek: nama proyek, profil yang dipakai, dan materialisasi per folder. \\
+Target & Nama satu konfigurasi koneksi di dalam profil (proyek ini: \kode{dev} = DuckDB, \kode{postgres} = Neon). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{info}[Versi yang dipakai dan diuji dalam modul ini]
+Python 3.10.6; \kode{dbt-core} 1.11.17; \kode{dbt-duckdb} 1.11.1; \kode{dbt-postgres} 1.11.0; DuckDB 1.5.6. Menurut metadata paketnya, \kode{dbt-core} 1.11 mendukung Python 3.10 sampai 3.13. Daftar lengkap versi ada di \kode{requirements.txt} pada lampiran proyek.
+\end{info}
+
+\begin{perhatian}[Selalu kunci versi dbt]
+Perintah \kode{pip install dbt-postgres} \emph{tanpa versi} dapat memasang versi \istilah{release candidate} yang belum stabil. Hal ini terjadi pada uji coba awal kelompok di Colab: terpasang \kode{dbt-core 1.13.0-rc1} (\textit{``Ahead of latest version!''}). Karena itu modul ini selalu memakai bentuk \kode{"dbt-core\textasciitilde=1.11.0"} (artinya: versi 1.11.x terbaru). Tanda kutip wajib ditulis karena karakter \kode{\textasciitilde=} dapat ditafsirkan lain oleh terminal.
+\end{perhatian}
+
+\subsection{Opsi A: Google Colab + Neon PostgreSQL}\label{sec:opsiA}
+Google Colab \citep{colab} menyediakan Python di peramban, sehingga tidak ada yang perlu dipasang di komputer. Basis data PostgreSQL disediakan oleh Neon \citep{neon}, layanan Postgres \istilah{serverless} dengan paket gratis. Semua langkah berikut sudah disusun dalam notebook \kode{notebooks/inventory\_dbt\_colab.ipynb} pada lampiran; pembaca cukup membukanya di Colab dan menekan \textsf{Shift+Enter} pada setiap sel secara berurutan.
+
+\langkah{Langkah A1 \textendash{} Siapkan basis data Neon.}
+\begin{enumerate}[nosep]
+    \item Buka \url{https://neon.tech}, daftar (bisa memakai akun Google), lalu buat \istilah{project} baru.
+    \item Pada dasbor proyek, klik \textsf{Connect}. Catat empat nilai: \textbf{host} (contoh bentuknya \url{ep-xxxx.ap-southeast-1.aws.neon.tech}), \textbf{user} (umumnya \kode{neondb\_owner}), \textbf{password}, dan \textbf{database} (umumnya \kode{neondb}).
+\end{enumerate}
+
+\langkah{Langkah A2 \textendash{} Simpan kredensial di Colab Secrets.}
+Di Colab, klik ikon kunci (\textsf{Secrets}) di panel kiri, tambahkan \kode{NEON\_HOST}, \kode{NEON\_USER}, \kode{NEON\_PASSWORD}, dan \kode{NEON\_DB}, lalu aktifkan \textsf{Notebook access}. Dengan cara ini password tidak pernah tertulis di notebook maupun di \kode{profiles.yml}.
+
+\langkah{Langkah A3 \textendash{} Jalankan sel-sel notebook.}
+Ringkasan isi sel ditunjukkan pada Kode~\ref{lst:colab}. Tanda \kode{!} berarti perintah terminal, \kode{\%cd} berarti pindah folder.
+
+\begin{lstlisting}[style=py, caption={Isi utama notebook Colab (diringkas dari \kode{inventory\_dbt\_colab.ipynb}).}, label={lst:colab}]
+# Sel 1: hubungkan Google Drive (unggah inventory_dbt.zip ke My Drive terlebih dahulu)
+from google.colab import drive
+drive.mount('/content/drive')
+%cd /content/drive/MyDrive
+
+# Sel 2: pasang dbt dengan versi terkunci
+!pip install -q "dbt-core~=1.11.0" "dbt-postgres~=1.11.0" "dbt-duckdb~=1.11.0" duckdb pandas matplotlib psycopg2-binary
+!dbt --version
+
+# Sel 3: ekstrak proyek dan masuk ke foldernya
+!unzip -q -o inventory_dbt.zip
+%cd /content/drive/MyDrive/inventory_dbt
+
+# Sel 4: baca kredensial dari Colab Secrets menjadi environment variable
+import os
+from google.colab import userdata
+for k in ["NEON_HOST", "NEON_USER", "NEON_PASSWORD", "NEON_DB"]:
+    os.environ[k] = userdata.get(k)
+
+# Sel 5: Extract & Load -> bangkitkan data lalu muat ke skema public di Neon
+!python scripts/generate_source_data.py
+!python scripts/load_source.py --target postgres
+
+# Sel 6-7: uji koneksi, lalu bangun data mart + jalankan seluruh test
+!dbt debug --profiles-dir . --target postgres
+!dbt build --profiles-dir . --target postgres
+
+# Sel 8: business query dan grafik
+!python scripts/run_business_queries.py --target postgres
+\end{lstlisting}
+
+\begin{cekberhasil}
+(1) \kode{dbt --version} memuat \kode{installed: 1.11.x} dan baris \kode{postgres: 1.11.x}; (2) \kode{dbt debug} diakhiri \kode{All checks passed!}; (3) \kode{dbt build} diakhiri \kode{Done. PASS=59 WARN=0 ERROR=0}. Tabel hasil dibuat di skema \kode{analytics\_dbt} dan dapat dilihat di menu \textsf{Tables} pada dasbor Neon.
+\end{cekberhasil}
+
+\begin{tips}[Belum punya akun Neon?]
+Notebook juga memuat sel alternatif yang menjalankan proyek yang sama dengan DuckDB di dalam Colab: \kode{!python scripts/load\_source.py}, lalu \kode{!dbt build --profiles-dir .} (tanpa \kode{--target}).
+\end{tips}
+
+\begin{perhatian}[Keterbatasan verifikasi jalur Colab + Neon]
+Seluruh angka pada modul ini berasal dari eksekusi Opsi~B (DuckDB lokal). Untuk target PostgreSQL, kelompok memverifikasi bahwa proyek ter-\istilah{parse} tanpa galat (\kode{dbt parse --target postgres}) dan bahwa model tidak memakai fungsi khusus DuckDB (diuji otomatis oleh \kode{scripts/tests/test\_portability.py}). Model sengaja ditulis dengan SQL standar (\kode{EXTRACT}, \kode{CASE}, \istilah{recursive CTE}) agar hasilnya sama di kedua basis data.
+\end{perhatian}
+
+\subsection{Opsi B: Komputer Lokal Windows + DuckDB}\label{sec:opsiB}
+DuckDB adalah basis data analitik berbentuk satu berkas (\kode{inventory.duckdb}), mirip SQLite, sehingga tidak ada server yang perlu dipasang.
+
+\langkah{Langkah B1 \textendash{} Pasang Python.} Unduh Python 3.10--3.13 dari \url{https://www.python.org/downloads/}, jalankan pemasangnya, dan \textbf{centang kotak} \textsf{Add python.exe to PATH} di layar pertama. Buka PowerShell baru, lalu periksa:
+\begin{lstlisting}[style=term]
+python --version
+# Keluaran yang diharapkan, misalnya: Python 3.10.6
+\end{lstlisting}
+
+\langkah{Langkah B2 \textendash{} Buka terminal di folder lampiran.} Ekstrak berkas lampiran kelompok, buka foldernya di File Explorer, klik kanan area kosong, lalu pilih \textsf{Open in Terminal}. Folder ini (selanjutnya disebut \emph{folder akar}) berisi \kode{inventory\_dbt}, \kode{classicmodels\_dbt}, dan \kode{requirements.txt}.
+
+\langkah{Langkah B3 \textendash{} Buat dan aktifkan \istilah{virtual environment}.}
+\begin{lstlisting}[style=term, caption={Membuat dan mengaktifkan venv (PowerShell).}, label={lst:venv}]
+python -m venv .venv                 # sekali saja; membuat folder .venv
+.venv\Scripts\Activate.ps1           # ulangi setiap membuka terminal baru
+\end{lstlisting}
+
+\begin{cekberhasil}
+Awal baris terminal berubah menjadi \kode{(.venv) PS C:\textbackslash...>}. Bila PowerShell menolak dengan pesan \textit{running scripts is disabled on this system}, jalankan sekali \kode{Set-ExecutionPolicy -Scope CurrentUser RemoteSigned}, jawab \kode{Y}, lalu ulangi aktivasi.
+\end{cekberhasil}
+
+\langkah{Langkah B4 \textendash{} Pasang dbt dan pustaka pendukung.}
+\begin{lstlisting}[style=term, caption={Instalasi dbt dengan versi terkunci.}, label={lst:pip}]
+python -m pip install --upgrade pip
+pip install "dbt-core~=1.11.0" "dbt-duckdb~=1.11.0" "dbt-postgres~=1.11.0" duckdb pandas matplotlib
+dbt --version
+\end{lstlisting}
+Keluaran \kode{dbt --version} pada lingkungan kelompok:
+\lstinputlisting[style=term, caption={Keluaran \kode{dbt --version} (\kode{logs/dbt\_version.txt}).}, label={lst:dbtversion}]{kode/inventory_dbt/logs/dbt_version.txt}
+Pesan \textit{Update available} boleh diabaikan; yang penting baris \textit{Plugins} memuat \kode{duckdb} dan \kode{postgres} dengan minor yang sama dengan \textit{Core} (1.11).
+
+\langkah{Langkah B5 \textendash{} Muat data sumber dan uji koneksi.}
+\begin{lstlisting}[style=term]
+cd inventory_dbt
+python scripts/generate_source_data.py     # bangkitkan 3 tabel sumber (CSV di data/)
+python scripts/load_source.py              # muat ke inventory.duckdb
+dbt debug --profiles-dir .
+\end{lstlisting}
+Potongan keluaran \kode{dbt debug} pada lingkungan kelompok:
+\begin{lstlisting}[style=term, caption={Keluaran \kode{dbt debug --profiles-dir .} (diringkas dari \kode{logs/dbt\_debug.txt}).}, label={lst:debug}]
+dbt version: 1.11.17
+python version: 3.10.6
+Using profiles.yml file at .\profiles.yml
+adapter type: duckdb
+adapter version: 1.11.1
+Configuration:
+  profiles.yml file [OK found and valid]
+  dbt_project.yml file [OK found and valid]
+Connection:
+  database: inventory
+  schema: main
+  path: inventory.duckdb
+  Connection test: [OK connection ok]
+All checks passed!
+\end{lstlisting}
+
+\begin{cekberhasil}
+Lingkungan lokal siap bila: (1) awal baris terminal \kode{(.venv)}; (2) \kode{dbt --version} memuat \kode{duckdb: 1.11.x}; (3) \kode{dbt debug --profiles-dir .} diakhiri \kode{All checks passed!}.
+\end{cekberhasil}
+
+\subsection{Konfigurasi Koneksi: \kode{profiles.yml}}\label{sec:profiles}
+Berkas \kode{profiles.yml}\index{profiles.yml} memberi tahu dbt basis data mana yang dipakai. Kelompok meletakkannya \emph{di dalam folder proyek} (bukan di folder bawaan \kode{\textasciitilde/.dbt/}) agar semua anggota memakai konfigurasi yang sama; karena itu setiap perintah dbt diberi opsi \kode{--profiles-dir .} (titik = ``folder saat ini''). Satu profil memuat dua target (Kode~\ref{lst:profiles}).
+
+\lstinputlisting[style=yml, caption={\kode{inventory\_dbt/profiles.yml}: target \kode{dev} (DuckDB) dan \kode{postgres} (Neon).}, label={lst:profiles}]{kode/inventory_dbt/profiles.yml}
+
+Beberapa hal penting dari berkas tersebut:
+\begin{itemize}[nosep]
+    \item Nama profil \kode{inventory\_dbt} harus sama dengan baris \kode{profile:} di \kode{dbt\_project.yml}.
+    \item \kode{target: dev} adalah target bawaan; target lain dipilih dengan opsi \kode{--target postgres}.
+    \item \kode{env\_var('NEON\_PASSWORD')} membaca nilai dari \istilah{environment variable}, sehingga kredensial tidak tersimpan di berkas yang dibagikan. Path DuckDB juga dapat diganti lewat \kode{INVENTORY\_DB}; fitur ini dipakai \istilah{mutation test} (Subbab~\ref{sec:hasiltest}).
+\end{itemize}
+
+\subsection{Mengatasi Galat yang Sering Muncul}\label{sec:galat}
+Tabel~\ref{tab:galat} merangkum galat yang dialami kelompok selama penyiapan (ditandai \ding{51}) serta galat umum lain beserta solusinya.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.36\linewidth} >{\raggedright\arraybackslash}p{0.58\linewidth}}
+\caption{Galat umum saat penyiapan dbt dan cara mengatasinya.}\label{tab:galat}\\
+\toprule
+\textbf{Pesan galat / gejala} & \textbf{Penyebab dan solusi} \\
+\midrule\endfirsthead
+\toprule
+\textbf{Pesan galat / gejala} & \textbf{Penyebab dan solusi} \\
+\midrule\endhead
+\bottomrule\endfoot
+\kode{dbt : The term 'dbt' is not recognized} & Venv belum aktif (terminal baru). Jalankan lagi \kode{.venv\textbackslash Scripts\textbackslash Activate.ps1}. \\
+\kode{Python was not found} & Python belum masuk PATH. Pasang ulang dan centang \textsf{Add python.exe to PATH}. \\
+\kode{running scripts is disabled on this system} & \istilah{Execution policy} PowerShell. Jalankan \kode{Set-ExecutionPolicy -Scope CurrentUser RemoteSigned}. \\
+\ding{51}\ \kode{dbt --version} menampilkan \kode{1.13.0-rc1} & \kode{pip install} tanpa versi memasang \istilah{release candidate}. Pasang ulang dengan \kode{"dbt-core\textasciitilde=1.11.0"}. \\
+\kode{Could not find profile named 'inventory\_dbt'} & Lupa \kode{--profiles-dir .}, atau terminal tidak berada di folder proyek. \\
+\kode{No dbt\_project.yml found} & Terminal tidak berada di folder proyek (sering terjadi bila hasil ekstrak bertingkat ganda). Pindah ke folder yang berisi \kode{dbt\_project.yml}. \\
+\kode{Env var required but not provided: 'NEON\_HOST'} & Target \kode{postgres} dipakai sebelum Secrets/\istilah{environment variable} diisi (Langkah A2). \\
+\kode{Catalog Error: Table with name source\_products does not exist} & Data sumber belum dimuat. Jalankan \kode{generate\_source\_data.py} lalu \kode{load\_source.py} sebelum \kode{dbt run}. \\
+\ding{51}\ \kode{Found ... 2 data tests} padahal \kode{schema.yml} berisi puluhan test & \istilah{Partial parsing} dbt memakai \istilah{cache} lama yang dibuat sebelum model ada. Jalankan sekali dengan \kode{--no-partial-parse}. \\
+\ding{51}\ Model hilir berstatus \kode{SKIP} pada \kode{dbt build} & Disengaja: \kode{dbt build} tidak membangun model hilir bila test model hulunya gagal. Perbaiki test yang gagal, atau gunakan \kode{dbt run} lalu \kode{dbt test} bila ingin melihat semua kegagalan sekaligus. \\
+\ding{51}\ \kode{IO Error: Cannot open file "...inventory.duckdb": The process cannot access the file because it is being used by another process} & Berkas DuckDB sedang dibuka program lain (mis. DBeaver, notebook, atau skrip Python). DuckDB hanya mengizinkan satu proses penulis. Tutup koneksi tersebut, lalu ulangi. \\
+\kode{click.exceptions.Abort} di Colab & \kode{dbt init} bersifat interaktif. Tambahkan \kode{--skip-profile-setup}. \\
+\end{longtable}
+
+\subsection{Latihan: Membuat Proyek dan Model Pertama dari Nol}\label{sec:latihan}
+Cara terbaik memahami dbt adalah membuat proyek kecil sendiri. Latihan berikut (sekitar 15 menit) memakai lingkungan Opsi~B. Hasil akhirnya: satu tabel gudang dari berkas CSV, satu model yang menghitung jumlah gudang per region, dan dua test. Seluruh keluaran di bawah ini disalin dari eksekusi nyata (\kode{latihan\_dbt/logs/}).
+
+\langkah{1. Buat kerangka proyek.} Jalankan di folder kerja mana pun (bukan di dalam \kode{inventory\_dbt}):
+\begin{lstlisting}[style=term]
+dbt init proyek_pertama --skip-profile-setup
+cd proyek_pertama
+\end{lstlisting}
+dbt membuat folder \kode{models/}, \kode{seeds/}, \kode{tests/}, \kode{macros/}, \kode{analyses/}, \kode{snapshots/}, berkas \kode{dbt\_project.yml}, dan contoh model di \kode{models/example/}. Hapus folder \kode{models/example/}.
+
+\langkah{2. Tulis profil koneksi dan materialisasi.} Buat \kode{profiles.yml}, lalu ganti bagian \kode{models:} paling bawah di \kode{dbt\_project.yml}:
+\begin{lstlisting}[style=yml]
+# profiles.yml
+proyek_pertama:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: latihan.duckdb
+      threads: 1
+
+# bagian bawah dbt_project.yml
+models:
+  proyek_pertama:
+    +materialized: table
+\end{lstlisting}
+
+\langkah{3. Siapkan data kecil sebagai \istilah{seed}.} \istilah{Seed}\index{seed} adalah berkas CSV kecil yang dimuat dbt menjadi tabel dengan \kode{dbt seed}. Buat \kode{seeds/gudang.csv}:
+\lstinputlisting[language={}, caption={\kode{seeds/gudang.csv}.}, label={lst:seed}]{kode/latihan_dbt/proyek_pertama/seeds/gudang.csv}
+
+\langkah{4. Tulis model pertama.} Buat \kode{models/gudang\_per\_region.sql}. Perhatikan bahwa \istilah{seed} dirujuk dengan \kode{ref()}, sama seperti model:
+\lstinputlisting[style=sql, caption={\kode{models/gudang\_per\_region.sql}.}, label={lst:modelpertama}]{kode/latihan_dbt/proyek_pertama/models/gudang_per_region.sql}
+
+\langkah{5. Tambahkan test dan dokumentasi.} Buat \kode{models/schema.yml}:
+\lstinputlisting[style=yml, caption={\kode{models/schema.yml}.}, label={lst:schemapertama}]{kode/latihan_dbt/proyek_pertama/models/schema.yml}
+
+\langkah{6. Jalankan.} \kode{dbt build} memuat seed, membangun model, lalu menjalankan test dalam satu langkah:
+\begin{lstlisting}[style=term, caption={Keluaran \kode{dbt build --profiles-dir .} pada latihan (diringkas dari \kode{03\_build.txt}).}, label={lst:buildlatihan}]
+Found 1 model, 1 seed, 2 data tests, 511 macros
+Concurrency: 1 threads (target='dev')
+1 of 4 OK loaded seed file main.gudang .................... [INSERT 4 in 0.09s]
+2 of 4 OK created sql table model main.gudang_per_region .. [OK in 0.08s]
+3 of 4 PASS not_null_gudang_per_region_region ............. [PASS in 0.04s]
+4 of 4 PASS unique_gudang_per_region_region ............... [PASS in 0.02s]
+Done. PASS=4 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=4
+\end{lstlisting}
+
+\begin{cekberhasil}
+Berkas \kode{latihan.duckdb} muncul di folder proyek dan tabel \kode{gudang\_per\_region} berisi tiga baris: (Jawa, 2), (Kalimantan, 1), (Sumatra, 1). Isi tabel dapat dilihat dengan Python:\\
+\kode{python -c "import duckdb; print(duckdb.connect('latihan.duckdb').execute('select * from gudang\_per\_region').fetchall())"}
+\end{cekberhasil}
+
+\langkah{7. Lihat seperti apa test yang gagal.} Agar terbiasa membaca kegagalan, pasang test \kode{unique} pada kolom \kode{region} di \istilah{seed} (Jawa muncul dua kali). Buat \kode{seeds/schema.yml}:
+\begin{lstlisting}[style=yml]
+version: 2
+seeds:
+  - name: gudang
+    columns:
+      - name: region
+        data_tests: [unique]
+\end{lstlisting}
+lalu jalankan \kode{dbt test --profiles-dir . --select gudang}:
+\begin{lstlisting}[style=term, caption={Contoh test yang gagal (diringkas dari \kode{05\_test\_fail.txt}).}, label={lst:testfail}]
+1 of 1 FAIL 1 unique_gudang_region ........................ [FAIL 1 in 0.05s]
+Failure in test unique_gudang_region (seeds\schema.yml)
+  Got 1 result, configured to fail if != 0
+  compiled code at target\compiled\proyek_pertama\seeds\schema.yml\unique_gudang_region.sql
+Done. PASS=0 WARN=0 ERROR=1 SKIP=0 NO-OP=0 TOTAL=1
+\end{lstlisting}
+Angka \kode{FAIL 1} berarti ada satu nilai yang melanggar aturan (``Jawa''). Kueri SQL test tersebut dapat dibuka di folder \kode{target/compiled/} dan dijalankan langsung untuk melihat baris pelanggarnya. Test ini memang sengaja salah; hapus kembali \kode{seeds/schema.yml}.
+
+\begin{info}[Pola yang sama berlaku untuk proyek besar]
+Latihan ini memuat seluruh unsur proyek kelompok dalam skala kecil: profil koneksi, sumber data, model dengan \kode{ref()}, test di YAML, dan \kode{dbt build}. Proyek \kode{inventory\_dbt} di Bab~\ref{chap:studikasus} hanya menambah jumlah model, macro, dan \istilah{singular test}.
+\end{info}
+
+\section{Workflow dan Use Case}\label{sec:workflow}
+Setelah lingkungan siap, siklus kerja yang dipakai kelompok pada proyek \kode{inventory\_dbt} terdiri atas langkah-langkah pada Tabel~\ref{tab:workflow}. Semua perintah dijalankan dari folder \kode{inventory\_dbt} dengan venv aktif.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.43\linewidth} >{\raggedright\arraybackslash}p{0.51\linewidth}}
+\caption{Perintah dalam alur kerja, sesuai urutan pemakaian.}\label{tab:workflow}\\
+\toprule
+\textbf{Perintah} & \textbf{Fungsi} \\
+\midrule\endfirsthead
+\toprule
+\textbf{Perintah} & \textbf{Fungsi} \\
+\midrule\endhead
+\bottomrule\endfoot
+\kode{python scripts/generate\_source\_data.py} & \istilah{Extract}: membangkitkan 3 tabel sumber ke \kode{data/*.csv} (di luar dbt). \\
+\kode{python scripts/load\_source.py} & \istilah{Load}: memuat CSV ke \kode{inventory.duckdb} (tambahkan \kode{--target postgres} untuk Neon). \\
+\kode{dbt debug --profiles-dir .} & Memeriksa konfigurasi dan koneksi. \\
+\kode{dbt run --profiles-dir .} & Membangun seluruh 9 model (3 \istilah{view} + 6 \istilah{table}) sesuai urutan DAG. \\
+\kode{dbt run --select staging} & Membangun model pada satu folder saja. \\
+\kode{dbt run --select +fact\_inventory} & Membangun satu model beserta seluruh model hulunya (tanda \kode{+}). \\
+\kode{dbt test --profiles-dir .} & Menjalankan 50 test kualitas data. \\
+\kode{dbt build --profiles-dir .} & \kode{run} + \kode{test} (+ \kode{seed}, \kode{snapshot}) dalam urutan DAG; model hilir dilewati bila test hulunya gagal. \\
+\kode{dbt compile --select path:analyses} & Merender kueri bisnis BQ1--BQ9 menjadi SQL murni di \kode{target/compiled/}. \\
+\kode{python scripts/run\_business\_queries.py} & Menjalankan SQL hasil kompilasi, menyimpan \kode{results/*.csv} dan \kode{charts/*.png}. \\
+\kode{dbt docs generate} lalu \kode{dbt docs serve} & Membuat dan membuka situs dokumentasi + \istilah{lineage graph} di \url{http://localhost:8080}. \\
+\kode{python scripts/mutation\_test.py} & Membuktikan bahwa \istilah{singular test} benar-benar menangkap data rusak. \\
+\kode{python scripts/etl\_manual\_tugas1.py} & (Pembanding) membangun data mart yang sama dengan ETL manual gaya Tugas I. \\
+\kode{python scripts/compare\_tugas1\_vs\_dbt.py} & Membandingkan hasil ETL manual dan dbt baris demi baris. \\
+\end{longtable}
+
+Perintah \kode{dbt ls --select +fact\_inventory} memperlihatkan bahwa memilih \kode{+fact\_inventory} otomatis menyertakan tujuh model: tiga \istilah{staging}, tiga dimensi yang dirujuk lewat \kode{ref()}, dan fakta itu sendiri. \kode{dim\_date} tidak ikut karena \kode{fact\_inventory} membentuk \kode{date\_key} langsung dengan macro, bukan dengan \kode{ref()}; keterkaitannya dijaga oleh \istilah{relationships test}.
+
+\langkah{Lineage.} \istilah{Directed Acyclic Graph} (DAG)\index{DAG} proyek yang dibangun dbt dari pemanggilan \kode{source()} dan \kode{ref()} ditunjukkan pada Gambar~\ref{fig:lineage}. Model \kode{stg\_inventory\_movements} memasok \kode{dim\_movement\_type} dan fakta transaksi; dimensi produk dan gudang masing-masing berasal dari satu tabel \istilah{staging}; \kode{fact\_inventory\_daily\_snapshot} dibentuk dari fakta transaksi (\istilah{fact-on-fact}) ditambah tiga dimensi untuk kerangka tanggal $\times$ produk $\times$ gudang.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/inv_lineage.png}
+\caption{\istilah{Lineage graph} proyek \kode{inventory\_dbt} dari \kode{target/manifest.json}: hijau = \istilah{source}, kuning = \istilah{staging} (\istilah{view}), biru = dimensi (\istilah{table}), merah = fakta (\istilah{table}).}\label{fig:lineage}
+\end{figure}
+
+\langkah{\istilah{Use case} dbt.} Selain membangun data mart dimensional seperti pada studi kasus ini, dbt umum dipakai untuk \citep{dbtdocs,reis2022}: (1) membangun \istilah{single source of truth} metrik bisnis (pendapatan, \istilah{churn}, retensi); (2) \istilah{incremental model} untuk tabel log berukuran besar sehingga hanya data baru yang diproses; (3) \istilah{snapshot} untuk merekam histori perubahan atribut (SCD Type~2); (4) pengujian kualitas data otomatis di \istilah{pipeline} CI/CD sebelum perubahan kode digabung; dan (5) dokumentasi serta \istilah{data lineage} untuk audit dan tata kelola data.

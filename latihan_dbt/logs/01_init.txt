@@ -1,0 +1,18 @@
+11:41:07  Running with dbt=1.11.17
+11:41:07  Creating dbt configuration folder at C:\Users\ASUS\.dbt
+11:41:07  
+Your new dbt project "proyek_pertama" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+

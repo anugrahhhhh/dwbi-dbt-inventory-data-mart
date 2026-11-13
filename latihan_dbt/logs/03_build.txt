@@ -1,0 +1,21 @@
+11:41:29  Running with dbt=1.11.17
+11:41:29  Registered adapter: duckdb=1.11.1
+11:41:29  Unable to do partial parsing because saved manifest not found. Starting full parse.
+11:41:32  Found 1 model, 1 seed, 2 data tests, 511 macros
+11:41:32  
+11:41:32  Concurrency: 1 threads (target='dev')
+11:41:32  
+11:41:32  1 of 4 START seed file main.gudang ............................................. [RUN]
+11:41:32  1 of 4 OK loaded seed file main.gudang ......................................... [INSERT 4 in 0.09s]
+11:41:32  2 of 4 START sql table model main.gudang_per_region ............................ [RUN]
+11:41:32  2 of 4 OK created sql table model main.gudang_per_region ....................... [OK in 0.08s]
+11:41:32  3 of 4 START test not_null_gudang_per_region_region ............................ [RUN]
+11:41:32  3 of 4 PASS not_null_gudang_per_region_region .................................. [PASS in 0.04s]
+11:41:32  4 of 4 START test unique_gudang_per_region_region .............................. [RUN]
+11:41:32  4 of 4 PASS unique_gudang_per_region_region .................................... [PASS in 0.02s]
+11:41:32  
+11:41:32  Finished running 1 seed, 1 table model, 2 data tests in 0 hours 0 minutes and 0.38 seconds (0.38s).
+11:41:32  
+11:41:32  Completed successfully
+11:41:32  
+11:41:32  Done. PASS=4 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=4

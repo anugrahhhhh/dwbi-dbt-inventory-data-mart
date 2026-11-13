@@ -1,6 +1,7 @@
 \documentclass[oneside,a4paper,11pt,explicit]{book}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\renewcommand*\ttdefault{lmtt}   % font mesin ketik vektor (Latin Modern) untuk kode
 \usepackage[sedes]{kultem}
 \usepackage[english]{babel}
 \usepackage{mdframed}
@@ -118,6 +119,7 @@
 \newcommand{\kode}[1]{\texttt{#1}}          % kode pendek dalam kalimat
 \newcommand{\istilah}[1]{\textit{#1}}      % istilah asing
 \newcommand{\cmd}[1]{\colorbox{black!8}{\texttt{#1}}}
+\newcommand{\langkah}[1]{\par\medskip\noindent\textbf{\color{blue!60!black}#1}\enspace}  % judul langkah sebaris
 
 \setcounter{secnumdepth}{2}
 \setcounter{tocdepth}{2}

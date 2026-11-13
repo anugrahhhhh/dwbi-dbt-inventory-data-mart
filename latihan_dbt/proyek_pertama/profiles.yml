@@ -1,0 +1,7 @@
+proyek_pertama:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: latihan.duckdb
+      threads: 1

@@ -1,0 +1,7 @@
+inventory_dbt.marts.dim_movement_type
+inventory_dbt.marts.dim_product
+inventory_dbt.marts.dim_warehouse
+inventory_dbt.marts.fact_inventory
+inventory_dbt.staging.stg_inventory_movements
+inventory_dbt.staging.stg_products
+inventory_dbt.staging.stg_warehouses

@@ -1,0 +1,19 @@
+11:41:40  Running with dbt=1.11.17
+11:41:40  Registered adapter: duckdb=1.11.1
+11:41:41  Found 1 model, 1 seed, 3 data tests, 511 macros
+11:41:41  
+11:41:41  Concurrency: 1 threads (target='dev')
+11:41:41  
+11:41:41  1 of 1 START test unique_gudang_region ......................................... [RUN]
+11:41:41  1 of 1 FAIL 1 unique_gudang_region ............................................. [FAIL 1 in 0.05s]
+11:41:41  
+11:41:41  Finished running 1 test in 0 hours 0 minutes and 0.15 seconds (0.15s).
+11:41:41  
+11:41:41  Completed with 1 error, 0 partial successes, and 0 warnings:
+11:41:41  
+11:41:41  Failure in test unique_gudang_region (seeds\schema.yml)
+11:41:41    Got 1 result, configured to fail if != 0
+11:41:41  
+11:41:41    compiled code at target\compiled\proyek_pertama\seeds\schema.yml\unique_gudang_region.sql
+11:41:41  
+11:41:41  Done. PASS=0 WARN=0 ERROR=1 SKIP=0 NO-OP=0 TOTAL=1

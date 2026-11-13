@@ -1,0 +1,7 @@
+version: 2
+models:
+  - name: gudang_per_region
+    description: "Jumlah gudang per region"
+    columns:
+      - name: region
+        data_tests: [unique, not_null]
