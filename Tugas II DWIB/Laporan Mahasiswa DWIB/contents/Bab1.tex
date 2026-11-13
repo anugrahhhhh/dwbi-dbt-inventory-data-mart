@@ -169,8 +169,9 @@ Dipakai kelompok & \istilah{Staging} & Dimensi \& fakta & \textendash{} & \texte
 Teknik & Arti singkat & Contoh di modul \\
 \midrule
 \istilah{Transaction fact} & Satu baris per peristiwa pada tingkat paling rinci & \kode{fact\_inventory}, \kode{fct\_order\_lines} \\
-\istilah{Periodic snapshot} & Satu baris per entitas per periode & \makecell[l]{\kode{fact\_inventory\_daily\_snapshot},\\\kode{fct\_sales\_performance}} \\
-\istilah{Fact-on-fact} & Fakta dibentuk dari fakta lain & kedua snapshot di atas \\
+\istilah{Periodic snapshot} & Satu baris per entitas per periode, termasuk periode tanpa aktivitas & \kode{fact\_inventory\_daily\_snapshot} \\
+\istilah{Aggregated fact} & Ringkasan fakta transaksi per periode; hanya periode yang ada aktivitasnya & \kode{fct\_sales\_performance} \\
+\istilah{Fact-on-fact} & Fakta dibentuk dari fakta lain & kedua tabel di atas \\
 \istilah{Additive} & Boleh dijumlah di semua dimensi & \kode{quantity}, \kode{revenue} \\
 \istilah{Semi-additive} & Tidak boleh dijumlah lintas waktu & \kode{stock\_on\_hand} \\
 \istilah{Non-additive} & Tidak boleh dijumlah sama sekali & \kode{unique\_customers}, \kode{aging\_days} \\
@@ -216,7 +217,7 @@ Step 6: DAG & \kode{dbt docs generate} & Gambar~\ref{fig:cmlineage} \\
 \midrule
 \kode{fct\_order\_lines} & 1 baris per item pesanan & tanggal, pelanggan, produk, sales rep, kantor; \kode{quantity\_ordered}, \kode{revenue}, \kode{cost}, \kode{gross\_profit} \\
 \kode{fct\_payments} & 1 baris per cek pembayaran & tanggal, pelanggan; \kode{amount} (\kode{check\_number} sebagai \istilah{degenerate dimension}) \\
-\kode{fct\_sales\_performance} & 1 baris per sales rep per bulan & sales rep, kantor, bulan; jumlah pesanan, pelanggan unik, unit, revenue, gross profit (\istilah{periodic snapshot}, \istilah{fact-on-fact}) \\
+\kode{fct\_sales\_performance} & 1 baris per sales rep per bulan & sales rep, kantor, bulan; jumlah pesanan, pelanggan unik, unit, revenue, gross profit (\istilah{fact-on-fact}; lembar kegiatan menyebutnya \istilah{periodic snapshot}, tetapi karena bulan tanpa penjualan tidak memiliki baris, secara ketat ia adalah \istilah{aggregated fact}) \\
 \bottomrule
 \end{tabularx}
 \end{table}

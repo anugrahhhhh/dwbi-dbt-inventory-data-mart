@@ -1,6 +1,6 @@
 \contentsline {lstlisting}{\numberline {1.1}{\ignorespaces \kode {classicmodels\_dbt/models/marts/fct\_sales\_performance.sql}.}}{6}{lstlisting.1.1}%
 \contentsline {lstlisting}{\numberline {1.2}{\ignorespaces Keluaran \kode {dbt build} ClassicModels (diringkas dari \kode {classicmodels\_dbt/logs/dbt\_build.txt}).}}{7}{lstlisting.1.2}%
-\contentsline {lstlisting}{\numberline {1.3}{\ignorespaces \kode {inventory\_dbt/dbt\_project.yml}.}}{8}{lstlisting.1.3}%
+\contentsline {lstlisting}{\numberline {1.3}{\ignorespaces \kode {inventory\_dbt/dbt\_project.yml}.}}{9}{lstlisting.1.3}%
 \contentsline {lstlisting}{\numberline {1.4}{\ignorespaces Potongan \kode {models/marts/schema.yml}.}}{9}{lstlisting.1.4}%
 \contentsline {lstlisting}{\numberline {1.5}{\ignorespaces \kode {tests/assert\_stock\_non\_negative.sql}.}}{10}{lstlisting.1.5}%
 \contentsline {lstlisting}{\numberline {2.1}{\ignorespaces Isi utama notebook Colab (diringkas dari \kode {inventory\_dbt\_colab.ipynb}).}}{14}{lstlisting.2.1}%

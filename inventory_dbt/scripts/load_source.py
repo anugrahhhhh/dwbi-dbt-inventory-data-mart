@@ -58,6 +58,7 @@ def load(db_path: Path, data_dir: Path) -> dict[str, int]:
 def load_postgres(data_dir: Path, schema: str = "public") -> dict[str, int]:
     """Muat ketiga CSV ke PostgreSQL (mis. Neon). Kredensial dibaca dari env NEON_*."""
     import psycopg2
+    import psycopg2.extras
 
     con = psycopg2.connect(host=os.environ["NEON_HOST"], user=os.environ["NEON_USER"],
                            password=os.environ["NEON_PASSWORD"], dbname=os.environ["NEON_DB"],
@@ -67,11 +68,13 @@ def load_postgres(data_dir: Path, schema: str = "public") -> dict[str, int]:
         for t in TABLES:
             pg = {"VARCHAR": "TEXT"}
             ddl = ", ".join(f"{c} {pg.get(ty, ty)}" for c, ty in TYPES[t].items())
-            cur.execute(f"DROP TABLE IF EXISTS {schema}.{t}; CREATE TABLE {schema}.{t} ({ddl})")
+            # CASCADE: setelah dbt build, view analytics_dbt.stg_* bergantung pada tabel ini.
+            # View tersebut dibuat ulang oleh dbt build berikutnya.
+            cur.execute(f"DROP TABLE IF EXISTS {schema}.{t} CASCADE; CREATE TABLE {schema}.{t} ({ddl})")
             df = _read(Path(data_dir), t)
-            rows = [tuple(None if v is None else v for v in r) for r in df.itertuples(index=False)]
-            ph = ", ".join(["%s"] * len(df.columns))
-            cur.executemany(f"INSERT INTO {schema}.{t} VALUES ({ph})", rows)
+            rows = [tuple(r) for r in df.itertuples(index=False)]
+            # kirim per 1.000 baris sekaligus (bukan satu perjalanan jaringan per baris)
+            psycopg2.extras.execute_values(cur, f"INSERT INTO {schema}.{t} VALUES %s", rows, page_size=1000)
             cur.execute(f"SELECT COUNT(*) FROM {schema}.{t}")
             counts[t] = cur.fetchone()[0]
     con.close()
